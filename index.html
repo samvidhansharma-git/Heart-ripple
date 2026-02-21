@@ -468,7 +468,12 @@ function frame(ts) {
   }
   if (phase>=4 && !heartBuilt) {
     const allDone = heartParts.every(p => p.progress >= 1);
-    if (allDone) { heartBuilt = true; phase = 5; }
+    if (allDone) {
+      heartBuilt = true; phase = 5;
+      // Show reveal button immediately
+      const btn = document.getElementById('reveal-btn');
+      if (btn) btn.classList.add('visible');
+    }
   }
   if (phase===5 && !titleShown) {
     titleShown = true;
