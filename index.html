@@ -184,20 +184,49 @@
     transition: transform 0.2s, box-shadow 0.2s;
   }
   #heart-msg-close:hover { transform: scale(1.07); box-shadow: 0 0 30px rgba(255,110,176,0.8); }
-  #click-hint {
+
+
+  #reveal-btn {
     position: fixed;
-    bottom: 70px;
-    width: 100%;
-    text-align: center;
-    color: rgba(255,200,220,0);
-    font-family: Georgia, serif;
-    font-size: clamp(10px,1.5vw,13px);
-    letter-spacing: 0.3em;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    background: linear-gradient(135deg, rgba(180,0,80,0.25), rgba(80,0,120,0.3));
+    border: 1.5px solid rgba(255,150,200,0.55);
+    border-radius: 60px;
+    color: rgba(255,220,240,0);
+    font-family: 'Georgia', serif;
+    font-size: clamp(13px, 1.8vw, 17px);
+    font-style: italic;
+    letter-spacing: 0.22em;
+    padding: 14px 38px;
+    cursor: pointer;
     pointer-events: none;
-    transition: color 2s ease;
-    z-index: 6;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 0px rgba(255,100,180,0);
+    opacity: 0;
+    transition: opacity 1.2s ease, color 1.2s ease, transform 1.2s ease,
+                box-shadow 0.4s ease, background 0.4s ease;
+    z-index: 15;
   }
-  #click-hint.visible { color: rgba(255,200,220,0.45); }
+  #reveal-btn.visible {
+    opacity: 1;
+    color: rgba(255,220,240,0.9);
+    pointer-events: all;
+    transform: translateX(-50%) translateY(0px);
+    box-shadow: 0 0 30px rgba(255,100,180,0.3), 0 0 60px rgba(255,80,160,0.15);
+    animation: btnPulse 2.2s ease-in-out infinite;
+  }
+  #reveal-btn:hover {
+    background: linear-gradient(135deg, rgba(220,0,100,0.45), rgba(120,0,180,0.4));
+    box-shadow: 0 0 50px rgba(255,100,180,0.6), 0 0 100px rgba(255,80,160,0.3);
+    transform: translateX(-50%) translateY(-3px) scale(1.04);
+    color: #fff;
+  }
+  @keyframes btnPulse {
+    0%, 100% { box-shadow: 0 0 25px rgba(255,100,180,0.3), 0 0 50px rgba(255,80,160,0.1); }
+    50%       { box-shadow: 0 0 45px rgba(255,100,180,0.6), 0 0 90px rgba(255,80,160,0.25); }
+  }
 </style>
 </head>
 <body>
@@ -205,18 +234,20 @@
 <canvas id="petals-canvas"></canvas>
 <button id="sound-btn">♪ Sound ON</button>
 <canvas id="cursor-trail-canvas"></canvas>
+<button id="reveal-btn">✦ Open My Heart ✦</button>
 <div id="heart-msg-overlay" id="heart-msg-overlay">
   <div id="heart-msg-box">
-    <h2>💌 A Message For You, Akka</h2>
+    <h2>💌 To My Dearest Akka</h2>
     <div class="emoji-row">🌸 💖 🌟 💫 🌺</div>
-    <p>Before I knew what love was, I already felt it — in your hands that held mine, in your voice that calmed every storm, in your laugh that made every room brighter.</p>
-    <p>You are not just my elder sister. You are my first hero, my forever safe place, and the reason I believe in magic.</p>
-    <p>No words, no stars, no universe could ever be big enough to hold how much I love you.</p>
-    <p style="color:#ffd700;font-style:normal;font-size:1.1em;letter-spacing:0.05em;">— With every heartbeat, always yours 💛</p>
-    <button id="heart-msg-close" onclick="document.getElementById('heart-msg-overlay').classList.remove('open')">Close with Love ♡</button>
+    <p>Long before I understood this world, you were already my world. You held my hand when I was too small to walk alone, and you never let go — not once, not ever.</p>
+    <p>You are the reason I laugh a little louder, dream a little bigger, and love a little deeper. Every good thing in me carries a piece of you.</p>
+    <p>You never needed to say "I love you" for me to feel it. I felt it in every sacrifice you made quietly, every time you put me first without thinking twice, every time you stayed up just so I wouldn't feel alone.</p>
+    <p>Akka, you are not just my elder sister — you are my first home, my safest place, and my greatest blessing.</p>
+    <p style="color:#ffd700;font-style:normal;font-size:1.05em;letter-spacing:0.04em;margin-top:6px;">Thank you for being you. I love you more than any star in this universe. 💛</p>
+    <p style="color:rgba(255,200,220,0.6);font-size:0.85em;letter-spacing:0.1em;margin-top:2px;">— Forever your little one 🌸</p>
+    <button id="heart-msg-close" onclick="document.getElementById('heart-msg-overlay').classList.remove('open');document.getElementById('reveal-btn').style.display='none'">Close with Love ♡</button>
   </div>
 </div>
-<div id="click-hint">✦ click the heart ✦</div>
 <div id="quotes"><div id="quote-text"></div></div>
 <div id="overlay"></div>
 <div id="title" id="title">Forever my first home, my loudest cheerleader, my heart's safest place — my Akka 🤍</div>
@@ -606,63 +637,7 @@ function frame(ts) {
       ctx.fillStyle=innerGlow;
       ctx.beginPath(); ctx.arc(cx,cy,ig*12,0,Math.PI*2); ctx.fill();
 
-      // ── "harshuu" name inside heart ──
-      const nameScale = Math.min(W,H) * 0.065;
-      const nameAlpha = Math.min(1, (heartPulse - 0.5) * 0.6);
-      if (nameAlpha > 0) {
-        ctx.save();
-        const nps = 1 + Math.sin(heartPulse)*0.06;
-        ctx.translate(cx, cy);
-        ctx.scale(nps, nps);
-        ctx.translate(-cx, -cy);
 
-        ctx.font = `900 ${nameScale}px 'Arial Black', 'Impact', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        // Outer gold halo
-        ctx.shadowColor = `rgba(255,210,0,${nameAlpha * 0.8})`;
-        ctx.shadowBlur = 40;
-        ctx.fillStyle = `rgba(255,200,0,${nameAlpha * 0.15})`;
-        ctx.fillText('HARSHUU', cx, cy);
-
-        // Mid amber glow
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = `rgba(255,180,20,${nameAlpha * 0.4})`;
-        ctx.fillText('HARSHUU', cx, cy);
-
-        // Animated shimmer sweep
-        const shimmer = 0.75 + Math.sin(heartPulse * 3.7) * 0.15 + Math.sin(heartPulse * 1.3) * 0.1;
-        const sweepX = cx + Math.sin(heartPulse * 1.8) * nameScale * 1.5;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `rgba(255,240,100,${nameAlpha})`;
-
-        const tg = ctx.createLinearGradient(cx - nameScale*2.8, cy - nameScale*0.5, sweepX + nameScale*1.5, cy + nameScale*0.5);
-        tg.addColorStop(0,    `hsla(40,100%,55%,${nameAlpha * shimmer})`);
-        tg.addColorStop(0.2,  `hsla(50,100%,70%,${nameAlpha * shimmer})`);
-        tg.addColorStop(0.4,  `hsla(45,100%,90%,${nameAlpha * Math.min(1,shimmer*1.3)})`);
-        tg.addColorStop(0.55, `hsla(55,100%,98%,${nameAlpha * shimmer})`);
-        tg.addColorStop(0.7,  `hsla(42,100%,75%,${nameAlpha * shimmer})`);
-        tg.addColorStop(0.85, `hsla(35,100%,60%,${nameAlpha * shimmer})`);
-        tg.addColorStop(1,    `hsla(30,100%,50%,${nameAlpha * shimmer})`);
-        ctx.fillStyle = tg;
-        ctx.fillText('HARSHUU', cx, cy);
-
-        // Bright highlight sweep
-        ctx.shadowBlur = 4;
-        ctx.shadowColor = `rgba(255,255,180,${nameAlpha * 0.9})`;
-        const hg = ctx.createLinearGradient(cx - nameScale*2.8, cy - nameScale*0.6, cx + nameScale*2.8, cy + nameScale*0.6);
-        hg.addColorStop(0,   `rgba(255,220,80,0)`);
-        hg.addColorStop(0.45,`rgba(255,255,200,${nameAlpha * 0.5})`);
-        hg.addColorStop(0.5, `rgba(255,255,255,${nameAlpha * 0.9})`);
-        hg.addColorStop(0.55,`rgba(255,255,200,${nameAlpha * 0.5})`);
-        hg.addColorStop(1,   `rgba(255,220,80,0)`);
-        ctx.fillStyle = hg;
-        ctx.fillText('HARSHUU', cx, cy);
-
-        ctx.shadowBlur = 0;
-        ctx.restore();
-      }
 
       // Heartbeat ripples
       if (Math.sin(heartPulse) > 0.95 && Math.sin(heartPulse - dt*2.5) <= 0.95) {
