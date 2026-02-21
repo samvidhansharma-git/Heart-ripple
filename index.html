@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Heart — Digital Collision</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000005;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Georgia', serif;
+  }
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+  #overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, #000005 100%);
+  }
+  #title {
+    position: fixed;
+    bottom: 40px;
+    width: 100%;
+    text-align: center;
+    color: rgba(255,200,220,0.0);
+    font-size: clamp(12px, 2vw, 18px);
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    transition: color 3s ease;
+    pointer-events: none;
+  }
+  #title.visible { color: rgba(255,200,220,0.5); }
+  #watermark {
+    position: fixed;
+    bottom: 18px;
+    right: 24px;
+    color: rgba(255,200,220,0.28);
+    font-size: clamp(10px, 1.2vw, 13px);
+    letter-spacing: 0.18em;
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    pointer-events: none;
+    text-shadow: 0 0 12px rgba(255,120,180,0.35);
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="overlay"></div>
+<div id="title" id="title">Forever my first home, my loudest cheerleader, my heart's safest place — my Akka 🤍</div>
+<div id="watermark">© Sankeerthan K</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let W, H, cx, cy;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W / 2;
+  cy = H / 2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Stars ──────────────────────────────────────────────
+const STAR_COUNT = 900;
+const stars = Array.from({length: STAR_COUNT}, () => ({
+  x: Math.random() * 2000 - 1000,
+  y: Math.random() * 2000 - 1000,
+  r: Math.random() * 1.4,
+  a: Math.random(),
+  twinkle: Math.random() * Math.PI * 2
+}));
+
+// ── Particle pool ──────────────────────────────────────
+const MAX = 18000;
+const px = new Float32Array(MAX);
+const py = new Float32Array(MAX);
+const pvx = new Float32Array(MAX);
+const pvy = new Float32Array(MAX);
+const pa = new Float32Array(MAX); // alpha
+const pr = new Float32Array(MAX); // radius
+const phue = new Float32Array(MAX);
+const psat = new Float32Array(MAX);
+const plife = new Float32Array(MAX);
+const pmaxlife = new Float32Array(MAX);
+const ptype = new Uint8Array(MAX); // 0=warm 1=cool 2=spark 3=heart 4=nebula
+let pcount = 0;
+
+function spawnParticle(x,y,vx,vy,hue,sat,life,radius,type) {
+  if (pcount >= MAX) return;
+  const i = pcount++;
+  px[i]=x; py[i]=y; pvx[i]=vx; pvy[i]=vy;
+  phue[i]=hue; psat[i]=sat;
+  pmaxlife[i]=plife[i]=life;
+  pr[i]=radius; pa[i]=1; ptype[i]=type;
+}
+
+// ── Heart shape ────────────────────────────────────────
+function heartPoint(t, scale) {
+  const x = 16 * Math.pow(Math.sin(t), 3);
+  const y = -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
+  return { x: cx + x * scale, y: cy + y * scale };
+}
+
+// ── Animation state machine ────────────────────────────
+// Phase 0: Stars appear + wave build (0–3s)
+// Phase 1: Waves travel  (3–6s)
+// Phase 2: Slow-mo approach (6–8s)
+// Phase 3: Collision burst (8–9s)
+// Phase 4: Heart formation (9–14s)
+// Phase 5: Heart beating + orbit (14–∞)
+
+let time = 0;
+let phase = 0;
+let heartParticles = []; // [{t, x, y, phase}]
+let heartBuilt = false;
+let heartPulse = 0;
+let cameraZoom = 1;
+let cameraAngle = 0;
+let burstDone = false;
+let titleShown = false;
+
+// Pre-generate heart particle targets
+const HEART_POINTS = 1400;
+const heartTargets = [];
+for (let i = 0; i < HEART_POINTS; i++) {
+  const t = (i / HEART_POINTS) * Math.PI * 2;
+  const scale = Math.min(W, H) * 0.038;
+  const p = heartPoint(t, scale);
+  // also fill interior
+  const jitter = Math.random() * scale * 0.8;
+  const jt = Math.random() * Math.PI * 2;
+  heartTargets.push({
+    tx: p.x + Math.cos(jt)*jitter*0.4,
+    ty: p.y + Math.sin(jt)*jitter*0.4,
+    t,
+    layer: Math.floor(Math.random()*3)
+  });
+}
+
+let heartParts = []; // active heart particles with target
+
+function triggerBurst() {
+  // Spawn explosion sparks
+  for (let i = 0; i < 800; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 12 + 2;
+    const warm = Math.random() < 0.5;
+    const hue = warm ? 330 + Math.random()*40 : 180 + Math.random()*60;
+    const sat = 80 + Math.random()*20;
+    spawnParticle(
+      cx + (Math.random()-0.5)*60,
+      cy + (Math.random()-0.5)*60,
+      Math.cos(angle)*speed, Math.sin(angle)*speed,
+      hue, sat, 90+Math.random()*60, 1.5+Math.random()*2.5, 2
+    );
+  }
+  // Spawn shockwave ring particles
+  for (let i = 0; i < 300; i++) {
+    const angle = (i/300)*Math.PI*2;
+    spawnParticle(cx, cy,
+      Math.cos(angle)*8, Math.sin(angle)*8,
+      30+Math.random()*30, 90, 50, 2, 2
+    );
+  }
+}
+
+function spawnHeartParticles() {
+  heartParts = heartTargets.map((ht, i) => {
+    const angle = Math.random()*Math.PI*2;
+    const dist = Math.random()*300+100;
+    return {
+      x: cx + Math.cos(angle)*dist,
+      y: cy + Math.sin(angle)*dist,
+      tx: ht.tx, ty: ht.ty,
+      t: ht.t, layer: ht.layer,
+      delay: i * 0.0015 + Math.random()*0.8,
+      progress: 0,
+      hue: ht.layer===0 ? 340+Math.random()*30 : ht.layer===1 ? 195+Math.random()*40 : 280+Math.random()*40,
+      sat: 85+Math.random()*15,
+      r: 1 + Math.random()*1.5
+    };
+  });
+}
+
+// ── Wave emitters ──────────────────────────────────────
+let waveTimer = 0;
+function emitWaves(dt, phase) {
+  if (phase < 1 || phase >= 3) return;
+  waveTimer += dt;
+  const interval = phase === 2 ? 0.08 : 0.03;
+  while (waveTimer > interval) {
+    waveTimer -= interval;
+    const rows = 18;
+    for (let r = 0; r < rows; r++) {
+      const frac = r / (rows-1);
+      const yOff = (frac - 0.5) * H * 0.55;
+      const wave = Math.sin(frac * Math.PI * 3 + time * 4) * 30;
+      const speed = phase === 2 ? 2.5 : 7 + Math.random()*2;
+
+      // Warm stream from left
+      const wHue = 320 + Math.random()*40;
+      spawnParticle(
+        Math.random()*60, cy + yOff + wave + (Math.random()-0.5)*20,
+        speed + Math.random()*1.5, (Math.random()-0.5)*0.6,
+        wHue, 80, 120+Math.random()*60, 1.2+Math.random()*1.8, 0
+      );
+      // Cool stream from right
+      const cHue = 175 + Math.random()*50;
+      spawnParticle(
+        W - Math.random()*60, cy + yOff + wave + (Math.random()-0.5)*20,
+        -(speed + Math.random()*1.5), (Math.random()-0.5)*0.6,
+        cHue, 90, 120+Math.random()*60, 1.2+Math.random()*1.8, 1
+      );
+    }
+  }
+}
+
+// ── Nebula / dust ──────────────────────────────────────
+let nebulaTimer = 0;
+function emitNebula(dt) {
+  nebulaTimer += dt;
+  if (nebulaTimer < 0.2) return;
+  nebulaTimer = 0;
+  for (let i = 0; i < 4; i++) {
+    const angle = Math.random()*Math.PI*2;
+    const r = Math.random()*200+80;
+    spawnParticle(
+      cx + Math.cos(angle)*r, cy + Math.sin(angle)*r,
+      (Math.random()-0.5)*0.3, (Math.random()-0.5)*0.3,
+      300+Math.random()*80, 60, 200, 8+Math.random()*12, 4
+    );
+  }
+}
+
+// ── Lightning veins ────────────────────────────────────
+let lightningTimer = 0;
+const lightnings = [];
+function spawnLightning() {
+  const t = Math.random()*Math.PI*2;
+  const scale = Math.min(W,H)*0.038;
+  const p = heartPoint(t, scale);
+  const t2 = t + (Math.random()-0.5)*1.2;
+  const p2 = heartPoint(t2, scale);
+  lightnings.push({x1:p.x,y1:p.y,x2:p2.x,y2:p2.y,life:15,maxLife:15,hue:180+Math.random()*40});
+}
+
+// ── Main render ────────────────────────────────────────
+let last = 0;
+function frame(ts) {
+  const dt = Math.min((ts - last)/1000, 0.05);
+  last = ts;
+  time += dt;
+
+  // Phase transitions (sped up)
+  if (phase===0 && time > 1.5) phase = 1;
+  if (phase===1 && time > 3.5) phase = 2;
+  if (phase===2 && time > 5) {
+    phase = 3;
+    triggerBurst();
+    setTimeout(() => { phase = 4; spawnHeartParticles(); }, 600);
+  }
+  if (phase>=4 && !heartBuilt) {
+    const allDone = heartParts.every(p => p.progress >= 1);
+    if (allDone) { heartBuilt = true; phase = 5; }
+  }
+  if (phase===5 && !titleShown) {
+    titleShown = true;
+    document.getElementById('title').classList.add('visible');
+  }
+
+  // Camera
+  if (phase <= 2) {
+    cameraZoom += (0.85 - cameraZoom) * dt * 0.4;
+  } else if (phase === 3) {
+    cameraZoom += (1.1 - cameraZoom) * dt * 2;
+  } else if (phase >= 4) {
+    cameraZoom += (1.0 - cameraZoom) * dt * 0.5;
+  }
+  if (phase >= 5) {
+    cameraAngle += dt * 0.08;
+  }
+
+  // ── Draw ──
+  ctx.save();
+  // Translate to center for zoom
+  ctx.translate(cx, cy);
+  ctx.scale(cameraZoom, cameraZoom);
+  ctx.translate(-cx, -cy);
+  // Orbit offset
+  if (phase >= 5) {
+    ctx.translate(Math.cos(cameraAngle)*15, Math.sin(cameraAngle)*8);
+  }
+
+  // Background trail
+  ctx.fillStyle = 'rgba(0,0,5,0.18)';
+  ctx.fillRect(-100,-100,W+200,H+200);
+
+  // Stars
+  const starAlpha = Math.min(1, time*0.4);
+  for (const s of stars) {
+    s.twinkle += dt * 1.5;
+    const ta = s.a * (0.6 + 0.4*Math.sin(s.twinkle)) * starAlpha;
+    ctx.beginPath();
+    ctx.arc(cx + s.x * (W/1800), cy + s.y * (H/1800), s.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(200,210,255,${ta})`;
+    ctx.fill();
+  }
+
+  // Space fog / lens flare (subtle radial)
+  if (phase >= 3) {
+    const fogAlpha = Math.min(0.06, (time - 8) * 0.01);
+    const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*0.5);
+    grad.addColorStop(0, `rgba(255,100,160,${fogAlpha})`);
+    grad.addColorStop(0.5, `rgba(100,200,255,${fogAlpha*0.5})`);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // Emit waves
+  emitWaves(dt, phase);
+  if (phase >= 4) emitNebula(dt);
+
+  // Update + draw particles
+  for (let i = 0; i < pcount; i++) {
+    plife[i] -= 1;
+    if (plife[i] <= 0) {
+      // swap with last
+      px[i]=px[pcount-1]; py[i]=py[pcount-1];
+      pvx[i]=pvx[pcount-1]; pvy[i]=pvy[pcount-1];
+      pa[i]=pa[pcount-1]; pr[i]=pr[pcount-1];
+      phue[i]=phue[pcount-1]; psat[i]=psat[pcount-1];
+      plife[i]=plife[pcount-1]; pmaxlife[i]=pmaxlife[pcount-1];
+      ptype[i]=ptype[pcount-1];
+      pcount--; i--; continue;
+    }
+    px[i] += pvx[i];
+    py[i] += pvy[i];
+    // drag
+    const drag = ptype[i]===2 ? 0.96 : ptype[i]===4 ? 0.99 : 0.98;
+    pvx[i]*=drag; pvy[i]*=drag;
+    // gravity toward center for phase 3 sparks
+    if (ptype[i]===2 && phase>=3) {
+      pvx[i] += (cx-px[i])*0.0003;
+      pvy[i] += (cy-py[i])*0.0003;
+    }
+    const lifeRatio = plife[i]/pmaxlife[i];
+    let alpha;
+    if (ptype[i]===4) { // nebula
+      alpha = lifeRatio < 0.3 ? lifeRatio/0.3 : lifeRatio;
+      alpha *= 0.08;
+    } else {
+      alpha = lifeRatio < 0.3 ? lifeRatio/0.3*0.9 : 0.9;
+    }
+    const sat = psat[i];
+    const lum = ptype[i]===2 ? 65+lifeRatio*20 : ptype[i]===4 ? 35 : 55+lifeRatio*20;
+
+    if (ptype[i]===4) {
+      const rr = pr[i]*(2-lifeRatio);
+      const g = ctx.createRadialGradient(px[i],py[i],0,px[i],py[i],rr);
+      g.addColorStop(0,`hsla(${phue[i]},${sat}%,${lum}%,${alpha})`);
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.arc(px[i],py[i],rr,0,Math.PI*2); ctx.fill();
+    } else {
+      // bloom glow
+      const glowR = pr[i]*3;
+      const g2 = ctx.createRadialGradient(px[i],py[i],0,px[i],py[i],glowR);
+      g2.addColorStop(0,`hsla(${phue[i]},${sat}%,${lum+15}%,${alpha*0.6})`);
+      g2.addColorStop(1,'transparent');
+      ctx.fillStyle=g2;
+      ctx.beginPath(); ctx.arc(px[i],py[i],glowR,0,Math.PI*2); ctx.fill();
+      // core
+      ctx.beginPath(); ctx.arc(px[i],py[i],pr[i],0,Math.PI*2);
+      ctx.fillStyle=`hsla(${phue[i]},${sat}%,${Math.min(95,lum+25)}%,${alpha})`;
+      ctx.fill();
+    }
+  }
+
+  // ── Heart particles (phase 4+) ──
+  if (phase >= 4) {
+    heartPulse += dt * (heartBuilt ? 2.5 : 1);
+    const pulseScale = heartBuilt ? 1 + Math.sin(heartPulse)*0.04 + Math.sin(heartPulse*2.3)*0.015 : 1;
+
+    for (const hp of heartParts) {
+      if (hp.delay > 0) { hp.delay -= dt*60; continue; }
+      hp.progress = Math.min(1, hp.progress + dt * (1.2 - hp.progress*0.8));
+      const t = hp.progress < 1 ? hp.progress : 1;
+      // eased position
+      const ease = t < 0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+      const hx = hp.x + (hp.tx - hp.x)*ease;
+      const hy = hp.y + (hp.ty - hp.y)*ease;
+      // apply pulse
+      const dx = hx - cx, dy = hy - cy;
+      const fx = cx + dx*pulseScale, fy = cy + dy*pulseScale;
+
+      // Energy thread trail when moving
+      if (hp.progress < 0.98) {
+        ctx.beginPath();
+        ctx.moveTo(hp.x + (hp.tx-hp.x)*(ease*0.8), hp.y + (hp.ty-hp.y)*(ease*0.8));
+        ctx.lineTo(fx, fy);
+        ctx.strokeStyle = `hsla(${hp.hue},${hp.sat}%,70%,0.15)`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+
+      let lum = hp.layer===0 ? 70 : hp.layer===1 ? 65 : 60;
+      if (heartBuilt) lum += Math.sin(heartPulse + hp.t*3)*8;
+
+      // glow
+      const gr = ctx.createRadialGradient(fx,fy,0,fx,fy,hp.r*5);
+      gr.addColorStop(0,`hsla(${hp.hue},${hp.sat}%,${lum}%,0.5)`);
+      gr.addColorStop(1,'transparent');
+      ctx.fillStyle=gr;
+      ctx.beginPath(); ctx.arc(fx,fy,hp.r*5,0,Math.PI*2); ctx.fill();
+      // core
+      ctx.beginPath(); ctx.arc(fx,fy,hp.r,0,Math.PI*2);
+      ctx.fillStyle=`hsla(${hp.hue},${hp.sat}%,${Math.min(95,lum+20)}%,0.95)`;
+      ctx.fill();
+    }
+
+    // Inner heart glow
+    if (heartBuilt) {
+      const ig = Math.min(W,H)*0.038;
+      const innerGlow = ctx.createRadialGradient(cx,cy,0,cx,cy,ig*12);
+      const gb = 0.06 + Math.sin(heartPulse)*0.04;
+      innerGlow.addColorStop(0, `rgba(255,140,180,${gb})`);
+      innerGlow.addColorStop(0.4, `rgba(255,80,120,${gb*0.5})`);
+      innerGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle=innerGlow;
+      ctx.beginPath(); ctx.arc(cx,cy,ig*12,0,Math.PI*2); ctx.fill();
+
+      // ── "harshuu" name inside heart ──
+      const nameScale = Math.min(W,H) * 0.065;
+      const nameAlpha = Math.min(1, (heartPulse - 0.5) * 0.6);
+      if (nameAlpha > 0) {
+        ctx.save();
+        const nps = 1 + Math.sin(heartPulse)*0.06;
+        ctx.translate(cx, cy);
+        ctx.scale(nps, nps);
+        ctx.translate(-cx, -cy);
+
+        ctx.font = `900 ${nameScale}px 'Arial Black', 'Impact', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Outer gold halo
+        ctx.shadowColor = `rgba(255,210,0,${nameAlpha * 0.8})`;
+        ctx.shadowBlur = 40;
+        ctx.fillStyle = `rgba(255,200,0,${nameAlpha * 0.15})`;
+        ctx.fillText('HARSHUU', cx, cy);
+
+        // Mid amber glow
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = `rgba(255,180,20,${nameAlpha * 0.4})`;
+        ctx.fillText('HARSHUU', cx, cy);
+
+        // Animated shimmer sweep
+        const shimmer = 0.75 + Math.sin(heartPulse * 3.7) * 0.15 + Math.sin(heartPulse * 1.3) * 0.1;
+        const sweepX = cx + Math.sin(heartPulse * 1.8) * nameScale * 1.5;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `rgba(255,240,100,${nameAlpha})`;
+
+        const tg = ctx.createLinearGradient(cx - nameScale*2.8, cy - nameScale*0.5, sweepX + nameScale*1.5, cy + nameScale*0.5);
+        tg.addColorStop(0,    `hsla(40,100%,55%,${nameAlpha * shimmer})`);
+        tg.addColorStop(0.2,  `hsla(50,100%,70%,${nameAlpha * shimmer})`);
+        tg.addColorStop(0.4,  `hsla(45,100%,90%,${nameAlpha * Math.min(1,shimmer*1.3)})`);
+        tg.addColorStop(0.55, `hsla(55,100%,98%,${nameAlpha * shimmer})`);
+        tg.addColorStop(0.7,  `hsla(42,100%,75%,${nameAlpha * shimmer})`);
+        tg.addColorStop(0.85, `hsla(35,100%,60%,${nameAlpha * shimmer})`);
+        tg.addColorStop(1,    `hsla(30,100%,50%,${nameAlpha * shimmer})`);
+        ctx.fillStyle = tg;
+        ctx.fillText('HARSHUU', cx, cy);
+
+        // Bright highlight sweep
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = `rgba(255,255,180,${nameAlpha * 0.9})`;
+        const hg = ctx.createLinearGradient(cx - nameScale*2.8, cy - nameScale*0.6, cx + nameScale*2.8, cy + nameScale*0.6);
+        hg.addColorStop(0,   `rgba(255,220,80,0)`);
+        hg.addColorStop(0.45,`rgba(255,255,200,${nameAlpha * 0.5})`);
+        hg.addColorStop(0.5, `rgba(255,255,255,${nameAlpha * 0.9})`);
+        hg.addColorStop(0.55,`rgba(255,255,200,${nameAlpha * 0.5})`);
+        hg.addColorStop(1,   `rgba(255,220,80,0)`);
+        ctx.fillStyle = hg;
+        ctx.fillText('HARSHUU', cx, cy);
+
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+
+      // Heartbeat ripples
+      if (Math.sin(heartPulse) > 0.95 && Math.sin(heartPulse - dt*2.5) <= 0.95) {
+        // spawn ripple particles
+        for (let i = 0; i < 60; i++) {
+          const ang = (i/60)*Math.PI*2;
+          const sp = 2+Math.random()*3;
+          spawnParticle(cx,cy,Math.cos(ang)*sp,Math.sin(ang)*sp,
+            330+Math.random()*40,85,50+Math.random()*30,1.5,2);
+        }
+      }
+    }
+
+    // Lightning veins
+    if (heartBuilt) {
+      lightningTimer += dt;
+      if (lightningTimer > 0.12) { lightningTimer=0; spawnLightning(); }
+      for (let li = lightnings.length-1; li>=0; li--) {
+        const l = lightnings[li];
+        l.life -= 1;
+        if (l.life <= 0) { lightnings.splice(li,1); continue; }
+        const lr = l.life/l.maxLife;
+        ctx.beginPath();
+        ctx.moveTo(l.x1,l.y1);
+        // jagged midpoint
+        const mx=(l.x1+l.x2)/2+(Math.random()-0.5)*30;
+        const my=(l.y1+l.y2)/2+(Math.random()-0.5)*30;
+        ctx.quadraticCurveTo(mx,my,l.x2,l.y2);
+        ctx.strokeStyle=`hsla(${l.hue},90%,75%,${lr*0.8})`;
+        ctx.lineWidth=lr*1.5;
+        ctx.shadowColor=`hsl(${l.hue},100%,80%)`;
+        ctx.shadowBlur=8;
+        ctx.stroke();
+        ctx.shadowBlur=0;
+      }
+    }
+  }
+
+  // Collision flash (phase 3)
+  if (phase===3) {
+    const flashAge = time - 5;
+    const flashAlpha = Math.max(0, 0.9 - flashAge*2.5);
+    if (flashAlpha > 0) {
+      const fg = ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*0.5);
+      fg.addColorStop(0,`rgba(255,220,240,${flashAlpha})`);
+      fg.addColorStop(0.3,`rgba(255,100,180,${flashAlpha*0.5})`);
+      fg.addColorStop(1,'transparent');
+      ctx.fillStyle=fg;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  // Vignette
+  const vig = ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.3,cx,cy,Math.min(W,H)*0.85);
+  vig.addColorStop(0,'transparent');
+  vig.addColorStop(1,'rgba(0,0,5,0.55)');
+  ctx.fillStyle=vig;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.restore();
+
+  // Floating stardust (fixed layer, no transform)
+  if (Math.random() < 0.3) {
+    const dx = Math.random()*W, dy = Math.random()*H;
+    ctx.beginPath();
+    ctx.arc(dx,dy,Math.random()*1.2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,240,255,${Math.random()*0.3})`;
+    ctx.fill();
+  }
+
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(ts => { last=ts; frame(ts); });
+</script>
+</body>
+</html>
