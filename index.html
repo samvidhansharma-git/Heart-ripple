@@ -3,1420 +3,794 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cosmic Heart — Digital Collision</title>
+<title>Cosmic Heart — For My Akka</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #000005;
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
-    font-family: 'Georgia', serif;
-  }
-  canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
-  #overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 40%, #000005 100%);
-  }
-  #title {
-    position: fixed;
-    bottom: 40px;
-    width: 100%;
-    text-align: center;
-    color: rgba(255,200,220,0.0);
-    font-size: clamp(12px, 2vw, 18px);
-    letter-spacing: 0.4em;
-    text-transform: uppercase;
-    transition: color 3s ease;
-    pointer-events: none;
-  }
-  #title.visible { color: rgba(255,200,220,0.5); }
-  #watermark {
-    position: fixed;
-    bottom: 18px;
-    right: 24px;
-    color: rgba(255,200,220,0.28);
-    font-size: clamp(10px, 1.2vw, 13px);
-    letter-spacing: 0.18em;
-    font-family: 'Georgia', serif;
-    font-style: italic;
-    pointer-events: none;
-    text-shadow: 0 0 12px rgba(255,120,180,0.35);
-    user-select: none;
-  }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000005; overflow:hidden; width:100vw; height:100vh; font-family:'Georgia',serif; }
+canvas { position:fixed; top:0; left:0; width:100%; height:100%; }
+#overlay { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; background:radial-gradient(ellipse at center, transparent 40%, #000005 100%); z-index:1; }
+#watermark { position:fixed; bottom:18px; right:24px; color:rgba(255,200,220,0.28); font-size:clamp(10px,1.2vw,13px); letter-spacing:0.18em; font-family:'Georgia',serif; font-style:italic; pointer-events:none; z-index:5; text-shadow:0 0 12px rgba(255,120,180,0.35); user-select:none; }
+#sound-btn { position:fixed; top:20px; right:24px; background:rgba(255,180,210,0.12); border:1px solid rgba(255,180,210,0.3); border-radius:50px; color:rgba(255,210,230,0.85); font-size:13px; letter-spacing:0.15em; padding:8px 18px; cursor:pointer; backdrop-filter:blur(8px); transition:background 0.3s,color 0.3s; z-index:30; font-family:Georgia,serif; }
+#sound-btn:hover { background:rgba(255,180,210,0.25); color:#fff; }
+#petals-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2; }
+#cursor-trail-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:20; }
+#shatter-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99; }
 
-  #petals-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 2;
-  }
-  #sound-btn {
-    position: fixed;
-    top: 20px;
-    right: 24px;
-    background: rgba(255,180,210,0.12);
-    border: 1px solid rgba(255,180,210,0.3);
-    border-radius: 50px;
-    color: rgba(255,210,230,0.85);
-    font-size: 13px;
-    letter-spacing: 0.15em;
-    padding: 8px 18px;
-    cursor: pointer;
-    pointer-events: all;
-    backdrop-filter: blur(8px);
-    transition: background 0.3s, color 0.3s;
-    z-index: 10;
-    font-family: Georgia, serif;
-  }
-  #sound-btn:hover { background: rgba(255,180,210,0.25); color: #fff; }
+/* Reveal button */
+#reveal-btn {
+  position:fixed; bottom:55px; left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(135deg,rgba(160,0,80,0.3),rgba(60,0,100,0.35));
+  border:1.5px solid rgba(255,140,190,0.5); border-radius:60px;
+  color:rgba(255,220,240,0); font-family:'Georgia',serif;
+  font-size:clamp(13px,1.8vw,17px); font-style:italic;
+  letter-spacing:0.22em; padding:14px 40px; cursor:pointer;
+  pointer-events:none; backdrop-filter:blur(12px);
+  opacity:0; z-index:25;
+  transition:opacity 1.4s ease, color 1.4s ease, transform 1.4s cubic-bezier(0.34,1.3,0.64,1), box-shadow 0.3s;
+}
+#reveal-btn.visible {
+  opacity:1; color:rgba(255,220,240,0.92); pointer-events:all;
+  transform:translateX(-50%) translateY(0px);
+  box-shadow:0 0 30px rgba(255,100,180,0.35), 0 0 70px rgba(255,80,160,0.15);
+  animation:btnPulse 2.2s ease-in-out infinite;
+}
+#reveal-btn:hover { background:linear-gradient(135deg,rgba(210,0,100,0.5),rgba(100,0,160,0.45)); color:#fff; transform:translateX(-50%) translateY(-3px) scale(1.05); }
+@keyframes btnPulse { 0%,100%{box-shadow:0 0 25px rgba(255,100,180,0.3),0 0 55px rgba(255,80,160,0.1)} 50%{box-shadow:0 0 50px rgba(255,100,180,0.6),0 0 100px rgba(255,80,160,0.25)} }
 
-  #quotes {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80%;
-    text-align: center;
-    pointer-events: none;
-    z-index: 5;
-    margin-top: 180px;
-  }
-  #quote-text {
-    font-family: 'Georgia', serif;
-    font-size: clamp(13px, 2vw, 20px);
-    font-style: italic;
-    color: rgba(255, 220, 240, 0);
-    letter-spacing: 0.08em;
-    line-height: 1.7;
-    transition: color 1.8s ease, opacity 1.8s ease;
-    text-shadow: 0 0 20px rgba(255,150,200,0.5), 0 0 40px rgba(255,100,180,0.3);
-    opacity: 0;
-  }
-  #quote-text.visible {
-    color: rgba(255, 220, 240, 0.82);
-    opacity: 1;
-  }
-  #cursor-trail-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 20;
-  }
+/* Message screen */
+#msg-screen {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:radial-gradient(ellipse at center,#0a0010 0%,#000005 100%);
+  z-index:100; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-start;
+  overflow-y:auto; padding:50px 20px 60px;
+  opacity:0; pointer-events:none;
+  transition:opacity 0.4s ease;
+}
+#msg-screen.active { opacity:1; pointer-events:all; }
+#msg-header {
+  font-family:'Georgia',serif; font-size:clamp(18px,3.5vw,32px);
+  color:rgba(255,180,210,0.95); letter-spacing:0.1em;
+  margin-bottom:30px; text-align:center;
+  text-shadow:0 0 30px rgba(255,100,180,0.7),0 0 60px rgba(255,80,160,0.3);
+  flex-shrink:0;
+}
+#msg-body {
+  max-width:680px; width:92%; font-family:'Georgia',serif;
+  font-size:clamp(14px,2vw,18px); color:rgba(255,220,235,0.9);
+  line-height:2.1; font-style:italic; text-align:center;
+  text-shadow:0 0 12px rgba(255,150,200,0.25); min-height:180px;
+}
+#msg-cursor {
+  display:inline-block; width:2px; height:1.1em;
+  background:rgba(255,180,210,0.9); margin-left:2px;
+  vertical-align:middle; animation:blink 0.75s step-end infinite;
+  box-shadow:0 0 8px rgba(255,150,200,0.8);
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+#msg-footer {
+  max-width:680px; width:92%; margin-top:28px;
+  font-family:'Georgia',serif; font-size:clamp(13px,1.8vw,16px);
+  color:rgba(255,215,0,0); letter-spacing:0.12em;
+  text-shadow:0 0 20px rgba(255,200,0,0.5);
+  text-align:center; transition:color 2s ease;
+}
+#msg-footer.show { color:rgba(255,215,0,0.88); }
+#msg-close-btn {
+  margin-top:24px; flex-shrink:0;
+  background:linear-gradient(135deg,rgba(160,0,80,0.3),rgba(60,0,100,0.35));
+  border:1.5px solid rgba(255,140,190,0.4); border-radius:50px;
+  color:rgba(255,220,240,0); font-family:'Georgia',serif;
+  font-size:clamp(12px,1.5vw,15px); letter-spacing:0.2em;
+  padding:11px 32px; cursor:pointer; backdrop-filter:blur(10px);
+  transition:color 2s ease, background 0.3s, transform 0.3s;
+}
+#msg-close-btn.show { color:rgba(255,220,240,0.88); }
+#msg-close-btn:hover { background:linear-gradient(135deg,rgba(210,0,100,0.5),rgba(100,0,160,0.45)); transform:scale(1.05); }
 
+/* Quotes section after message */
 
-
-  #reveal-btn {
-    position: fixed;
-    bottom: 60px;
-    left: 50%;
-    transform: translateX(-50%) translateY(30px);
-    background: linear-gradient(135deg, rgba(180,0,80,0.25), rgba(80,0,120,0.3));
-    border: 1.5px solid rgba(255,150,200,0.55);
-    border-radius: 60px;
-    color: rgba(255,220,240,0);
-    font-family: 'Georgia', serif;
-    font-size: clamp(13px, 1.8vw, 17px);
-    font-style: italic;
-    letter-spacing: 0.22em;
-    padding: 14px 38px;
-    cursor: pointer;
-    pointer-events: none;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 0 0px rgba(255,100,180,0);
-    opacity: 0;
-    transition: opacity 1.2s ease, color 1.2s ease, transform 1.2s ease,
-                box-shadow 0.4s ease, background 0.4s ease;
-    z-index: 15;
+  #msg-quotes-section {
+    max-width:680px; width:92%; margin-top:24px;
+    opacity:0; transition:opacity 1.5s ease; text-align:center; flex-shrink:0;
+    padding-bottom: 40px;
   }
-  #reveal-btn.visible {
-    opacity: 1;
-    color: rgba(255,220,240,0.9);
-    pointer-events: all;
-    transform: translateX(-50%) translateY(0px);
-    box-shadow: 0 0 30px rgba(255,100,180,0.3), 0 0 60px rgba(255,80,160,0.15);
-    animation: btnPulse 2.2s ease-in-out infinite;
-  }
-  #reveal-btn:hover {
-    background: linear-gradient(135deg, rgba(220,0,100,0.45), rgba(120,0,180,0.4));
-    box-shadow: 0 0 50px rgba(255,100,180,0.6), 0 0 100px rgba(255,80,160,0.3);
-    transform: translateX(-50%) translateY(-3px) scale(1.04);
-    color: #fff;
-  }
-  @keyframes btnPulse {
-    0%, 100% { box-shadow: 0 0 25px rgba(255,100,180,0.3), 0 0 50px rgba(255,80,160,0.1); }
-    50%       { box-shadow: 0 0 45px rgba(255,100,180,0.6), 0 0 90px rgba(255,80,160,0.25); }
-  }
-
-  #msg-screen {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(ellipse at center, #0a0010 0%, #000005 100%);
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 1.2s ease;
-    padding: 40px 20px;
-  }
-  #msg-screen.active {
-    opacity: 1;
-    pointer-events: all;
-  }
-  #msg-header {
-    font-family: 'Georgia', serif;
-    font-size: clamp(18px, 3.5vw, 32px);
-    color: rgba(255,180,210,0.95);
-    letter-spacing: 0.1em;
-    margin-bottom: 32px;
-    text-align: center;
-    text-shadow: 0 0 30px rgba(255,100,180,0.7), 0 0 60px rgba(255,80,160,0.3);
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: opacity 1s ease 0.5s, transform 1s ease 0.5s;
-  }
-  #msg-screen.active #msg-header {
-    opacity: 1; transform: translateY(0);
-  }
-  #msg-body {
-    max-width: 680px;
-    width: 92%;
-    font-family: 'Georgia', serif;
-    font-size: clamp(14px, 2.1vw, 19px);
-    color: rgba(255,220,235,0.88);
-    line-height: 2.0;
-    font-style: italic;
-    text-align: center;
-    text-shadow: 0 0 12px rgba(255,150,200,0.3);
-    min-height: 220px;
-  }
-  #msg-cursor {
-    display: inline-block;
-    width: 2px;
-    height: 1.1em;
-    background: rgba(255,180,210,0.9);
-    margin-left: 2px;
-    vertical-align: middle;
-    animation: blink 0.75s step-end infinite;
-    box-shadow: 0 0 8px rgba(255,150,200,0.8);
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-  #msg-footer {
-    margin-top: 36px;
-    font-family: 'Georgia', serif;
-    font-size: clamp(13px, 1.8vw, 16px);
-    color: rgba(255,215,0,0.85);
-    letter-spacing: 0.12em;
-    text-shadow: 0 0 20px rgba(255,200,0,0.5);
-    opacity: 0;
-    transition: opacity 2s ease;
-    text-align: center;
-  }
-  #msg-footer.show { opacity: 1; }
-  #msg-close-btn {
-    margin-top: 30px;
-    background: linear-gradient(135deg, rgba(180,0,80,0.3), rgba(80,0,120,0.35));
-    border: 1.5px solid rgba(255,150,200,0.4);
-    border-radius: 50px;
-    color: rgba(255,220,240,0.85);
-    font-family: 'Georgia', serif;
-    font-size: clamp(12px,1.5vw,15px);
-    letter-spacing: 0.2em;
-    padding: 11px 32px;
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-    opacity: 0;
-    transition: opacity 2s ease, background 0.3s, transform 0.3s;
-    box-shadow: 0 0 20px rgba(255,100,180,0.2);
-  }
-  #msg-close-btn.show { opacity: 1; }
-  #msg-close-btn:hover {
-    background: linear-gradient(135deg,rgba(220,0,100,0.5),rgba(120,0,180,0.45));
-    transform: scale(1.05);
-    box-shadow: 0 0 35px rgba(255,100,180,0.5);
-  }
-  /* Shatter particle canvas */
-  #shatter-canvas {
-    position: fixed;
-    top:0;left:0;width:100%;height:100%;
-    pointer-events:none;
-    z-index:99;
-  }
+  #msg-quotes-section.show { opacity:1; }
+  #msg-quotes-section hr { border:none; border-top:1px solid rgba(255,150,200,0.2); margin:22px auto; width:50%; }
+  .q-label { font-family:'Georgia',serif; font-size:clamp(10px,1.3vw,12px); letter-spacing:0.3em; color:rgba(255,200,220,0.4); text-transform:uppercase; margin-bottom:18px; }
+  .q-item { font-family:'Georgia',serif; font-size:clamp(12px,1.6vw,15px); color:rgba(255,220,235,0); font-style:italic; line-height:2.0; margin-bottom:18px; padding:0 10px; text-shadow:0 0 12px rgba(255,150,200,0.3); transition:color 1.2s ease; }
+  .q-item.show { color:rgba(255,220,235,0.82); }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <canvas id="petals-canvas"></canvas>
-<button id="sound-btn">♪ Sound ON</button>
 <canvas id="cursor-trail-canvas"></canvas>
 <canvas id="shatter-canvas"></canvas>
+
+<div id="overlay"></div>
+<button id="sound-btn">♪ Sound ON</button>
+<div id="watermark">© Sankeerthan K</div>
+<button id="reveal-btn">✦ Open My Heart ✦</button>
+
 <div id="msg-screen">
   <div id="msg-header">💌 &nbsp; For My Dearest Akka &nbsp; 💌</div>
-  <div id="msg-body"><span id="msg-text"></span><span id="msg-cursor"></span></div>
-  <div id="msg-footer">— Forever your little one &nbsp;🌸&nbsp; I love you, Akka 💛</div>
+  <div id="msg-body"><span id="msg-cursor"></span></div>
+  <div id="msg-footer">— With deep love, respect, and sincerity &nbsp;💛&nbsp; Always your little one</div>
   <button id="msg-close-btn" onclick="closeMsgScreen()">↩ Back to the Heart</button>
+
 </div>
-<button id="reveal-btn">✦ Open My Heart ✦</button>
-    <p>Long before I understood this world, you were already my world. You held my hand when I was too small to walk alone, and you never let go — not once, not ever.</p>
-    <p>You are the reason I laugh a little louder, dream a little bigger, and love a little deeper. Every good thing in me carries a piece of you.</p>
-    <p>You never needed to say "I love you" for me to feel it. I felt it in every sacrifice you made quietly, every time you put me first without thinking twice, every time you stayed up just so I wouldn't feel alone.</p>
-    <p>Akka, you are not just my elder sister — you are my first home, my safest place, and my greatest blessing.</p>
-    <p style="color:#ffd700;font-style:normal;font-size:1.05em;letter-spacing:0.04em;margin-top:6px;">Thank you for being you. I love you more than any star in this universe. 💛</p>
-    <p style="color:rgba(255,200,220,0.6);font-size:0.85em;letter-spacing:0.1em;margin-top:2px;">— Forever your little one 🌸</p>
-    <button id="heart-msg-close" onclick="document.getElementById('heart-msg-overlay').classList.remove('open');document.getElementById('reveal-btn').style.display='none'">Close with Love ♡</button>
-  </div>
-</div>
-<div id="quotes"><div id="quote-text"></div></div>
-<div id="overlay"></div>
-<div id="title" id="title">Forever my first home, my loudest cheerleader, my heart's safest place — my Akka 🤍</div>
-<div id="watermark">© Sankeerthan K</div>
 
 <script>
+// ══════════════════════════════════════════════════
+// CORE SETUP
+// ══════════════════════════════════════════════════
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-
 let W, H, cx, cy;
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-  cx = W / 2;
-  cy = H / 2;
-}
-resize();
-window.addEventListener('resize', resize);
+function resize() { W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; cx=W/2; cy=H/2; }
+resize(); window.addEventListener('resize', resize);
 
-// ── Stars ──────────────────────────────────────────────
+// ── Stars ──────────────────────────────────────────
 const STAR_COUNT = 900;
-const stars = Array.from({length: STAR_COUNT}, () => ({
-  x: Math.random() * 2000 - 1000,
-  y: Math.random() * 2000 - 1000,
-  r: Math.random() * 1.4,
-  a: Math.random(),
-  twinkle: Math.random() * Math.PI * 2
+const stars = Array.from({length:STAR_COUNT}, () => ({
+  x:Math.random()*2000-1000, y:Math.random()*2000-1000,
+  r:Math.random()*1.4, a:Math.random(), twinkle:Math.random()*Math.PI*2
 }));
 
-// ── Particle pool ──────────────────────────────────────
+// ── Particle pool ──────────────────────────────────
 const MAX = 18000;
-const px = new Float32Array(MAX);
-const py = new Float32Array(MAX);
-const pvx = new Float32Array(MAX);
-const pvy = new Float32Array(MAX);
-const pa = new Float32Array(MAX); // alpha
-const pr = new Float32Array(MAX); // radius
-const phue = new Float32Array(MAX);
-const psat = new Float32Array(MAX);
-const plife = new Float32Array(MAX);
-const pmaxlife = new Float32Array(MAX);
-const ptype = new Uint8Array(MAX); // 0=warm 1=cool 2=spark 3=heart 4=nebula
-let pcount = 0;
-
-function spawnParticle(x,y,vx,vy,hue,sat,life,radius,type) {
-  if (pcount >= MAX) return;
-  const i = pcount++;
-  px[i]=x; py[i]=y; pvx[i]=vx; pvy[i]=vy;
-  phue[i]=hue; psat[i]=sat;
-  pmaxlife[i]=plife[i]=life;
-  pr[i]=radius; pa[i]=1; ptype[i]=type;
+const px=new Float32Array(MAX),py=new Float32Array(MAX),pvx=new Float32Array(MAX),pvy=new Float32Array(MAX);
+const pa=new Float32Array(MAX),pr=new Float32Array(MAX),phue=new Float32Array(MAX),psat=new Float32Array(MAX);
+const plife=new Float32Array(MAX),pmaxlife=new Float32Array(MAX),ptype=new Uint8Array(MAX);
+let pcount=0;
+function spawnParticle(x,y,vx,vy,hue,sat,life,radius,type){
+  if(pcount>=MAX)return; const i=pcount++;
+  px[i]=x;py[i]=y;pvx[i]=vx;pvy[i]=vy;phue[i]=hue;psat[i]=sat;
+  pmaxlife[i]=plife[i]=life;pr[i]=radius;pa[i]=1;ptype[i]=type;
 }
 
-// ── Heart shape ────────────────────────────────────────
-function heartPoint(t, scale) {
-  const x = 16 * Math.pow(Math.sin(t), 3);
-  const y = -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
-  return { x: cx + x * scale, y: cy + y * scale };
+// ── Heart math ─────────────────────────────────────
+function heartPoint(t,scale){
+  const x=16*Math.pow(Math.sin(t),3);
+  const y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+  return{x:cx+x*scale,y:cy+y*scale};
 }
 
-// ── Animation state machine ────────────────────────────
-// Phase 0: Stars appear + wave build (0–3s)
-// Phase 1: Waves travel  (3–6s)
-// Phase 2: Slow-mo approach (6–8s)
-// Phase 3: Collision burst (8–9s)
-// Phase 4: Heart formation (9–14s)
-// Phase 5: Heart beating + orbit (14–∞)
+// ── State ──────────────────────────────────────────
+let time=0, phase=0, heartBuilt=false, heartPulse=0;
+let cameraZoom=1, cameraAngle=0;
 
-let time = 0;
-let phase = 0;
-let heartParticles = []; // [{t, x, y, phase}]
-let heartBuilt = false;
-let heartPulse = 0;
-let cameraZoom = 1;
-let cameraAngle = 0;
-let burstDone = false;
-let titleShown = false;
-
-// Pre-generate heart particle targets
-const HEART_POINTS = 1400;
-const heartTargets = [];
-for (let i = 0; i < HEART_POINTS; i++) {
-  const t = (i / HEART_POINTS) * Math.PI * 2;
-  const scale = Math.min(W, H) * 0.038;
-  const p = heartPoint(t, scale);
-  // also fill interior
-  const jitter = Math.random() * scale * 0.8;
-  const jt = Math.random() * Math.PI * 2;
-  heartTargets.push({
-    tx: p.x + Math.cos(jt)*jitter*0.4,
-    ty: p.y + Math.sin(jt)*jitter*0.4,
-    t,
-    layer: Math.floor(Math.random()*3)
-  });
+// Clean heart outline targets
+const HEART_POINTS=900;
+const heartTargets=[];
+const heartScale=Math.min(window.innerWidth,window.innerHeight)*0.038;
+for(let i=0;i<HEART_POINTS;i++){
+  const t=(i/HEART_POINTS)*Math.PI*2;
+  const p=heartPoint(t,heartScale);
+  heartTargets.push({tx:p.x,ty:p.y,t,layer:i%3});
 }
+let heartParts=[];
 
-let heartParts = []; // active heart particles with target
-
-function triggerBurst() {
-  // Spawn explosion sparks
-  for (let i = 0; i < 800; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 12 + 2;
-    const warm = Math.random() < 0.5;
-    const hue = warm ? 330 + Math.random()*40 : 180 + Math.random()*60;
-    const sat = 80 + Math.random()*20;
-    spawnParticle(
-      cx + (Math.random()-0.5)*60,
-      cy + (Math.random()-0.5)*60,
-      Math.cos(angle)*speed, Math.sin(angle)*speed,
-      hue, sat, 90+Math.random()*60, 1.5+Math.random()*2.5, 2
-    );
-  }
-  // Spawn shockwave ring particles
-  for (let i = 0; i < 300; i++) {
-    const angle = (i/300)*Math.PI*2;
-    spawnParticle(cx, cy,
-      Math.cos(angle)*8, Math.sin(angle)*8,
-      30+Math.random()*30, 90, 50, 2, 2
-    );
-  }
-}
-
-function spawnHeartParticles() {
-  heartParts = heartTargets.map((ht, i) => {
-    const angle = Math.random()*Math.PI*2;
-    const dist = Math.random()*300+100;
-    return {
-      x: cx + Math.cos(angle)*dist,
-      y: cy + Math.sin(angle)*dist,
-      tx: ht.tx, ty: ht.ty,
-      t: ht.t, layer: ht.layer,
-      delay: i * 0.0015 + Math.random()*0.8,
-      progress: 0,
-      hue: ht.layer===0 ? 340+Math.random()*30 : ht.layer===1 ? 195+Math.random()*40 : 280+Math.random()*40,
-      sat: 85+Math.random()*15,
-      r: 1 + Math.random()*1.5
+function spawnHeartParticles(){
+  heartParts=heartTargets.map((ht,i)=>{
+    const startAngle=ht.t;
+    const startDist=Math.min(W,H)*0.5;
+    return{
+      x:cx+Math.cos(startAngle)*startDist,
+      y:cy+Math.sin(startAngle)*startDist,
+      tx:ht.tx,ty:ht.ty,t:ht.t,layer:ht.layer,
+      delay:i*0.0028,progress:0,
+      hue:ht.layer===0?345:ht.layer===1?200:285,
+      sat:90,r:1.6
     };
   });
 }
 
-// ── Wave emitters ──────────────────────────────────────
-let waveTimer = 0;
-function emitWaves(dt, phase) {
-  if (phase < 1 || phase >= 3) return;
-  waveTimer += dt;
-  const interval = phase === 2 ? 0.08 : 0.03;
-  while (waveTimer > interval) {
-    waveTimer -= interval;
-    const rows = 18;
-    for (let r = 0; r < rows; r++) {
-      const frac = r / (rows-1);
-      const yOff = (frac - 0.5) * H * 0.55;
-      const wave = Math.sin(frac * Math.PI * 3 + time * 4) * 30;
-      const speed = phase === 2 ? 2.5 : 7 + Math.random()*2;
+// ── Burst ──────────────────────────────────────────
+function triggerBurst(){
+  for(let i=0;i<800;i++){
+    const angle=Math.random()*Math.PI*2; const speed=Math.random()*12+2;
+    const hue=(Math.random()<0.5?330:180)+Math.random()*40;
+    spawnParticle(cx+(Math.random()-0.5)*60,cy+(Math.random()-0.5)*60,
+      Math.cos(angle)*speed,Math.sin(angle)*speed,hue,85,90+Math.random()*60,1.5+Math.random()*2.5,2);
+  }
+  for(let i=0;i<300;i++){
+    const angle=(i/300)*Math.PI*2;
+    spawnParticle(cx,cy,Math.cos(angle)*8,Math.sin(angle)*8,30+Math.random()*30,90,50,2,2);
+  }
+}
 
-      // Warm stream from left
-      const wHue = 320 + Math.random()*40;
-      spawnParticle(
-        Math.random()*60, cy + yOff + wave + (Math.random()-0.5)*20,
-        speed + Math.random()*1.5, (Math.random()-0.5)*0.6,
-        wHue, 80, 120+Math.random()*60, 1.2+Math.random()*1.8, 0
-      );
-      // Cool stream from right
-      const cHue = 175 + Math.random()*50;
-      spawnParticle(
-        W - Math.random()*60, cy + yOff + wave + (Math.random()-0.5)*20,
-        -(speed + Math.random()*1.5), (Math.random()-0.5)*0.6,
-        cHue, 90, 120+Math.random()*60, 1.2+Math.random()*1.8, 1
-      );
+// ── Waves ──────────────────────────────────────────
+let waveTimer=0;
+function emitWaves(dt,ph){
+  if(ph<1||ph>=3)return; waveTimer+=dt;
+  const interval=ph===2?0.08:0.03;
+  while(waveTimer>interval){
+    waveTimer-=interval;
+    for(let r=0;r<18;r++){
+      const frac=r/17, yOff=(frac-0.5)*H*0.55;
+      const wave=Math.sin(frac*Math.PI*3+time*4)*30;
+      const speed=ph===2?2.5:7+Math.random()*2;
+      spawnParticle(Math.random()*60,cy+yOff+wave+(Math.random()-0.5)*20,speed+Math.random()*1.5,(Math.random()-0.5)*0.6,320+Math.random()*40,80,120+Math.random()*60,1.2+Math.random()*1.8,0);
+      spawnParticle(W-Math.random()*60,cy+yOff+wave+(Math.random()-0.5)*20,-(speed+Math.random()*1.5),(Math.random()-0.5)*0.6,175+Math.random()*50,90,120+Math.random()*60,1.2+Math.random()*1.8,1);
     }
   }
 }
 
-// ── Nebula / dust ──────────────────────────────────────
-let nebulaTimer = 0;
-function emitNebula(dt) {
-  nebulaTimer += dt;
-  if (nebulaTimer < 0.2) return;
-  nebulaTimer = 0;
-  for (let i = 0; i < 4; i++) {
-    const angle = Math.random()*Math.PI*2;
-    const r = Math.random()*200+80;
-    spawnParticle(
-      cx + Math.cos(angle)*r, cy + Math.sin(angle)*r,
-      (Math.random()-0.5)*0.3, (Math.random()-0.5)*0.3,
-      300+Math.random()*80, 60, 200, 8+Math.random()*12, 4
-    );
+// ── Nebula ─────────────────────────────────────────
+let nebulaTimer=0;
+function emitNebula(dt){
+  nebulaTimer+=dt; if(nebulaTimer<0.2)return; nebulaTimer=0;
+  for(let i=0;i<4;i++){
+    const angle=Math.random()*Math.PI*2,r=Math.random()*200+80;
+    spawnParticle(cx+Math.cos(angle)*r,cy+Math.sin(angle)*r,(Math.random()-0.5)*0.3,(Math.random()-0.5)*0.3,300+Math.random()*80,60,200,8+Math.random()*12,4);
   }
 }
 
-// ── Lightning veins ────────────────────────────────────
-let lightningTimer = 0;
-const lightnings = [];
-function spawnLightning() {
-  const t = Math.random()*Math.PI*2;
-  const scale = Math.min(W,H)*0.038;
-  const p = heartPoint(t, scale);
-  const t2 = t + (Math.random()-0.5)*1.2;
-  const p2 = heartPoint(t2, scale);
+// ── Lightning ──────────────────────────────────────
+let lightningTimer=0; const lightnings=[];
+function spawnLightning(){
+  const scale=Math.min(W,H)*0.038;
+  const t=Math.random()*Math.PI*2, t2=t+(Math.random()-0.5)*1.2;
+  const p=heartPoint(t,scale), p2=heartPoint(t2,scale);
   lightnings.push({x1:p.x,y1:p.y,x2:p2.x,y2:p2.y,life:15,maxLife:15,hue:180+Math.random()*40});
 }
 
-// ── Main render ────────────────────────────────────────
-let last = 0;
-function frame(ts) {
-  const dt = Math.min((ts - last)/1000, 0.05);
-  last = ts;
-  time += dt;
-
-  // Phase transitions (sped up)
-  if (phase===0 && time > 1.0) phase = 1;
-  if (phase===1 && time > 2.5) phase = 2;
-  if (phase===2 && time > 3.8) {
-    phase = 3;
-    triggerBurst();
-    setTimeout(() => { phase = 4; spawnHeartParticles(); }, 600);
+// ── Shooting Stars ──────────────────────────────────
+const shootingStars=[]; let shootTimer=0;
+function spawnShootingStar(){
+  const side=Math.random()<0.5;
+  shootingStars.push({x:side?-20:W+20,y:Math.random()*H*0.6,
+    vx:side?(6+Math.random()*8):-(6+Math.random()*8),vy:(Math.random()-0.3)*4,
+    len:80+Math.random()*140,life:1,hue:40+Math.random()*40});
+}
+function drawShootingStars(dt){
+  shootTimer+=dt; if(shootTimer>1.8+Math.random()){shootTimer=0;spawnShootingStar();}
+  for(let i=shootingStars.length-1;i>=0;i--){
+    const s=shootingStars[i]; s.x+=s.vx; s.y+=s.vy; s.life-=dt*0.9;
+    if(s.life<=0||s.x<-200||s.x>W+200){shootingStars.splice(i,1);continue;}
+    const tailX=s.x-Math.sign(s.vx)*s.len;
+    const grad=ctx.createLinearGradient(tailX,s.y,s.x,s.y);
+    grad.addColorStop(0,'transparent');
+    grad.addColorStop(0.6,`hsla(${s.hue},100%,80%,${s.life*0.4})`);
+    grad.addColorStop(1,`hsla(${s.hue},100%,98%,${s.life})`);
+    ctx.beginPath(); ctx.moveTo(tailX,s.y); ctx.lineTo(s.x,s.y);
+    ctx.strokeStyle=grad; ctx.lineWidth=1.5+s.life; ctx.stroke();
+    ctx.beginPath(); ctx.arc(s.x,s.y,2+s.life*1.5,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,220,${s.life})`; ctx.fill();
   }
-  if (phase>=4 && !heartBuilt) {
-    const allDone = heartParts.every(p => p.progress >= 1);
-    if (allDone) {
-      heartBuilt = true; phase = 5;
-      // Show reveal button immediately
-      const btn = document.getElementById('reveal-btn');
-      if (btn) btn.classList.add('visible');
+}
+
+// ══════════════════════════════════════════════════
+// MAIN RENDER LOOP
+// ══════════════════════════════════════════════════
+let last=0;
+function frame(ts){
+  const dt=Math.min((ts-last)/1000,0.05); last=ts; time+=dt;
+
+  if(phase===0&&time>1.0) phase=1;
+  if(phase===1&&time>2.5) phase=2;
+  if(phase===2&&time>3.8){ phase=3; triggerBurst(); setTimeout(()=>{phase=4;spawnHeartParticles();},600); }
+  if(phase>=4&&!heartBuilt){
+    const allDone=heartParts.every(p=>p.progress>=1);
+    if(allDone){
+      heartBuilt=true; phase=5;
+      document.getElementById('reveal-btn').classList.add('visible');
     }
   }
-  if (phase===5 && !titleShown) {
-    titleShown = true;
-    document.getElementById('title').classList.add('visible');
-  }
-
+  
   // Camera
-  if (phase <= 2) {
-    cameraZoom += (0.85 - cameraZoom) * dt * 0.4;
-  } else if (phase === 3) {
-    cameraZoom += (1.1 - cameraZoom) * dt * 2;
-  } else if (phase >= 4) {
-    cameraZoom += (1.0 - cameraZoom) * dt * 0.5;
-  }
-  if (phase >= 5) {
-    cameraAngle += dt * 0.08;
-  }
+  if(phase<=2) cameraZoom+=(0.85-cameraZoom)*dt*0.4;
+  else if(phase===3) cameraZoom+=(1.1-cameraZoom)*dt*2;
+  else cameraZoom+=(1.0-cameraZoom)*dt*0.5;
+  if(phase>=5) cameraAngle+=dt*0.08;
 
-  // ── Draw ──
   ctx.save();
-  // Translate to center for zoom
-  ctx.translate(cx, cy);
-  ctx.scale(cameraZoom, cameraZoom);
-  ctx.translate(-cx, -cy);
-  // Orbit offset
-  if (phase >= 5) {
-    ctx.translate(Math.cos(cameraAngle)*15, Math.sin(cameraAngle)*8);
-  }
+  ctx.translate(cx,cy); ctx.scale(cameraZoom,cameraZoom); ctx.translate(-cx,-cy);
+  if(phase>=5) ctx.translate(Math.cos(cameraAngle)*15,Math.sin(cameraAngle)*8);
 
-  // Background trail
-  ctx.fillStyle = 'rgba(0,0,5,0.18)';
-  ctx.fillRect(-100,-100,W+200,H+200);
+  ctx.fillStyle='rgba(0,0,5,0.18)'; ctx.fillRect(-100,-100,W+200,H+200);
 
   // Stars
-  const starAlpha = Math.min(1, time*0.4);
-  for (const s of stars) {
-    s.twinkle += dt * 1.5;
-    const ta = s.a * (0.6 + 0.4*Math.sin(s.twinkle)) * starAlpha;
-    ctx.beginPath();
-    ctx.arc(cx + s.x * (W/1800), cy + s.y * (H/1800), s.r, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(200,210,255,${ta})`;
-    ctx.fill();
+  const starAlpha=Math.min(1,time*0.4);
+  for(const s of stars){
+    s.twinkle+=dt*1.5;
+    const ta=s.a*(0.6+0.4*Math.sin(s.twinkle))*starAlpha;
+    ctx.beginPath(); ctx.arc(cx+s.x*(W/1800),cy+s.y*(H/1800),s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(200,210,255,${ta})`; ctx.fill();
   }
 
-  // Space fog / lens flare (subtle radial)
-  if (phase >= 3) {
-    const fogAlpha = Math.min(0.06, (time - 8) * 0.01);
-    const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*0.5);
-    grad.addColorStop(0, `rgba(255,100,160,${fogAlpha})`);
-    grad.addColorStop(0.5, `rgba(100,200,255,${fogAlpha*0.5})`);
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,W,H);
+  // Space fog
+  if(phase>=3){
+    const fogAlpha=Math.min(0.06,(time-3.8)*0.01);
+    const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*0.5);
+    grad.addColorStop(0,`rgba(255,100,160,${fogAlpha})`);
+    grad.addColorStop(0.5,`rgba(100,200,255,${fogAlpha*0.5})`);
+    grad.addColorStop(1,'transparent');
+    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
   }
 
-  // Emit waves
-  emitWaves(dt, phase);
-  if (phase >= 4) emitNebula(dt);
+  emitWaves(dt,phase);
+  if(phase>=4) emitNebula(dt);
 
-  // Update + draw particles
-  for (let i = 0; i < pcount; i++) {
-    plife[i] -= 1;
-    if (plife[i] <= 0) {
-      // swap with last
-      px[i]=px[pcount-1]; py[i]=py[pcount-1];
-      pvx[i]=pvx[pcount-1]; pvy[i]=pvy[pcount-1];
-      pa[i]=pa[pcount-1]; pr[i]=pr[pcount-1];
-      phue[i]=phue[pcount-1]; psat[i]=psat[pcount-1];
-      plife[i]=plife[pcount-1]; pmaxlife[i]=pmaxlife[pcount-1];
-      ptype[i]=ptype[pcount-1];
-      pcount--; i--; continue;
+  // Particles
+  for(let i=0;i<pcount;i++){
+    plife[i]-=1;
+    if(plife[i]<=0){
+      px[i]=px[pcount-1];py[i]=py[pcount-1];pvx[i]=pvx[pcount-1];pvy[i]=pvy[pcount-1];
+      pa[i]=pa[pcount-1];pr[i]=pr[pcount-1];phue[i]=phue[pcount-1];psat[i]=psat[pcount-1];
+      plife[i]=plife[pcount-1];pmaxlife[i]=pmaxlife[pcount-1];ptype[i]=ptype[pcount-1];
+      pcount--;i--;continue;
     }
-    px[i] += pvx[i];
-    py[i] += pvy[i];
-    // drag
-    const drag = ptype[i]===2 ? 0.96 : ptype[i]===4 ? 0.99 : 0.98;
-    pvx[i]*=drag; pvy[i]*=drag;
-    // gravity toward center for phase 3 sparks
-    if (ptype[i]===2 && phase>=3) {
-      pvx[i] += (cx-px[i])*0.0003;
-      pvy[i] += (cy-py[i])*0.0003;
-    }
-    const lifeRatio = plife[i]/pmaxlife[i];
-    let alpha;
-    if (ptype[i]===4) { // nebula
-      alpha = lifeRatio < 0.3 ? lifeRatio/0.3 : lifeRatio;
-      alpha *= 0.08;
-    } else {
-      alpha = lifeRatio < 0.3 ? lifeRatio/0.3*0.9 : 0.9;
-    }
-    const sat = psat[i];
-    const lum = ptype[i]===2 ? 65+lifeRatio*20 : ptype[i]===4 ? 35 : 55+lifeRatio*20;
-
-    if (ptype[i]===4) {
-      const rr = pr[i]*(2-lifeRatio);
-      const g = ctx.createRadialGradient(px[i],py[i],0,px[i],py[i],rr);
-      g.addColorStop(0,`hsla(${phue[i]},${sat}%,${lum}%,${alpha})`);
-      g.addColorStop(1,'transparent');
-      ctx.fillStyle=g;
-      ctx.beginPath(); ctx.arc(px[i],py[i],rr,0,Math.PI*2); ctx.fill();
-    } else {
-      // bloom glow
-      const glowR = pr[i]*3;
-      const g2 = ctx.createRadialGradient(px[i],py[i],0,px[i],py[i],glowR);
-      g2.addColorStop(0,`hsla(${phue[i]},${sat}%,${lum+15}%,${alpha*0.6})`);
-      g2.addColorStop(1,'transparent');
-      ctx.fillStyle=g2;
-      ctx.beginPath(); ctx.arc(px[i],py[i],glowR,0,Math.PI*2); ctx.fill();
-      // core
-      ctx.beginPath(); ctx.arc(px[i],py[i],pr[i],0,Math.PI*2);
-      ctx.fillStyle=`hsla(${phue[i]},${sat}%,${Math.min(95,lum+25)}%,${alpha})`;
-      ctx.fill();
+    px[i]+=pvx[i];py[i]+=pvy[i];
+    const drag=ptype[i]===2?0.96:ptype[i]===4?0.99:0.98;
+    pvx[i]*=drag;pvy[i]*=drag;
+    if(ptype[i]===2&&phase>=3){pvx[i]+=(cx-px[i])*0.0003;pvy[i]+=(cy-py[i])*0.0003;}
+    const lifeRatio=plife[i]/pmaxlife[i];
+    let alpha=ptype[i]===4?(lifeRatio<0.3?lifeRatio/0.3:lifeRatio)*0.08:(lifeRatio<0.3?lifeRatio/0.3*0.9:0.9);
+    const sat=psat[i],lum=ptype[i]===2?65+lifeRatio*20:ptype[i]===4?35:55+lifeRatio*20;
+    if(ptype[i]===4){
+      const rr=pr[i]*(2-lifeRatio);
+      const g=ctx.createRadialGradient(px[i],py[i],0,px[i],py[i],rr);
+      g.addColorStop(0,`hsla(${phue[i]},${sat}%,${lum}%,${alpha})`);g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(px[i],py[i],rr,0,Math.PI*2);ctx.fill();
+    }else{
+      const glowR=pr[i]*3;
+      const g2=ctx.createRadialGradient(px[i],py[i],0,px[i],py[i],glowR);
+      g2.addColorStop(0,`hsla(${phue[i]},${sat}%,${lum+15}%,${alpha*0.6})`);g2.addColorStop(1,'transparent');
+      ctx.fillStyle=g2;ctx.beginPath();ctx.arc(px[i],py[i],glowR,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(px[i],py[i],pr[i],0,Math.PI*2);
+      ctx.fillStyle=`hsla(${phue[i]},${sat}%,${Math.min(95,lum+25)}%,${alpha})`;ctx.fill();
     }
   }
 
-  // ── Heart particles (phase 4+) ──
-  if (phase >= 4) {
-    heartPulse += dt * (heartBuilt ? 2.5 : 1);
-    const pulseScale = heartBuilt ? 1 + Math.sin(heartPulse)*0.04 + Math.sin(heartPulse*2.3)*0.015 : 1;
-
-    for (const hp of heartParts) {
-      if (hp.delay > 0) { hp.delay -= dt*60; continue; }
-      hp.progress = Math.min(1, hp.progress + dt * (1.2 - hp.progress*0.8));
-      const t = hp.progress < 1 ? hp.progress : 1;
-      // eased position
-      const ease = t < 0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
-      const hx = hp.x + (hp.tx - hp.x)*ease;
-      const hy = hp.y + (hp.ty - hp.y)*ease;
-      // apply pulse
-      const dx = hx - cx, dy = hy - cy;
-      const fx = cx + dx*pulseScale, fy = cy + dy*pulseScale;
-
-      // Energy thread trail when moving
-      if (hp.progress < 0.98) {
-        ctx.beginPath();
-        ctx.moveTo(hp.x + (hp.tx-hp.x)*(ease*0.8), hp.y + (hp.ty-hp.y)*(ease*0.8));
-        ctx.lineTo(fx, fy);
-        ctx.strokeStyle = `hsla(${hp.hue},${hp.sat}%,70%,0.15)`;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      }
-
-      let lum = hp.layer===0 ? 70 : hp.layer===1 ? 65 : 60;
-      if (heartBuilt) lum += Math.sin(heartPulse + hp.t*3)*8;
-
-      // glow
-      const gr = ctx.createRadialGradient(fx,fy,0,fx,fy,hp.r*5);
-      gr.addColorStop(0,`hsla(${hp.hue},${hp.sat}%,${lum}%,0.5)`);
-      gr.addColorStop(1,'transparent');
-      ctx.fillStyle=gr;
-      ctx.beginPath(); ctx.arc(fx,fy,hp.r*5,0,Math.PI*2); ctx.fill();
-      // core
-      ctx.beginPath(); ctx.arc(fx,fy,hp.r,0,Math.PI*2);
-      ctx.fillStyle=`hsla(${hp.hue},${hp.sat}%,${Math.min(95,lum+20)}%,0.95)`;
-      ctx.fill();
+  // Heart particles
+  if(phase>=4){
+    heartPulse+=dt*(heartBuilt?2.5:1);
+    const pulseScale=heartBuilt?1+Math.sin(heartPulse)*0.04+Math.sin(heartPulse*2.3)*0.015:1;
+    for(const hp of heartParts){
+      if(hp.delay>0){hp.delay-=dt*60;continue;}
+      hp.progress=Math.min(1,hp.progress+dt*1.8);
+      const ease=hp.progress<0.5?4*hp.progress*hp.progress*hp.progress:1-Math.pow(-2*hp.progress+2,3)/2;
+      const hx=hp.x+(hp.tx-hp.x)*ease, hy=hp.y+(hp.ty-hp.y)*ease;
+      const ddx=hx-cx,ddy=hy-cy;
+      const fx=cx+ddx*pulseScale,fy=cy+ddy*pulseScale;
+      let lum=hp.layer===0?70:hp.layer===1?65:60;
+      if(heartBuilt) lum+=Math.sin(heartPulse+hp.t*3)*8;
+      const gr=ctx.createRadialGradient(fx,fy,0,fx,fy,hp.r*5);
+      gr.addColorStop(0,`hsla(${hp.hue},${hp.sat}%,${lum}%,0.5)`);gr.addColorStop(1,'transparent');
+      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(fx,fy,hp.r*5,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(fx,fy,hp.r,0,Math.PI*2);
+      ctx.fillStyle=`hsla(${hp.hue},${hp.sat}%,${Math.min(95,lum+20)}%,0.95)`;ctx.fill();
     }
-
-    // Inner heart glow
-    if (heartBuilt) {
-      const ig = Math.min(W,H)*0.038;
-      const innerGlow = ctx.createRadialGradient(cx,cy,0,cx,cy,ig*12);
-      const gb = 0.06 + Math.sin(heartPulse)*0.04;
-      innerGlow.addColorStop(0, `rgba(255,140,180,${gb})`);
-      innerGlow.addColorStop(0.4, `rgba(255,80,120,${gb*0.5})`);
-      innerGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle=innerGlow;
-      ctx.beginPath(); ctx.arc(cx,cy,ig*12,0,Math.PI*2); ctx.fill();
-
-
-
-      // Heartbeat ripples
-      if (Math.sin(heartPulse) > 0.95 && Math.sin(heartPulse - dt*2.5) <= 0.95) {
-        // spawn ripple particles
-        for (let i = 0; i < 60; i++) {
-          const ang = (i/60)*Math.PI*2;
-          const sp = 2+Math.random()*3;
-          spawnParticle(cx,cy,Math.cos(ang)*sp,Math.sin(ang)*sp,
-            330+Math.random()*40,85,50+Math.random()*30,1.5,2);
+    if(heartBuilt){
+      const ig=Math.min(W,H)*0.038;
+      const innerGlow=ctx.createRadialGradient(cx,cy,0,cx,cy,ig*12);
+      const gb=0.06+Math.sin(heartPulse)*0.04;
+      innerGlow.addColorStop(0,`rgba(255,140,180,${gb})`);
+      innerGlow.addColorStop(0.4,`rgba(255,80,120,${gb*0.5})`);
+      innerGlow.addColorStop(1,'transparent');
+      ctx.fillStyle=innerGlow;ctx.beginPath();ctx.arc(cx,cy,ig*12,0,Math.PI*2);ctx.fill();
+      if(Math.sin(heartPulse)>0.95&&Math.sin(heartPulse-dt*2.5)<=0.95){
+        for(let i=0;i<60;i++){
+          const ang=(i/60)*Math.PI*2,sp=2+Math.random()*3;
+          spawnParticle(cx,cy,Math.cos(ang)*sp,Math.sin(ang)*sp,330+Math.random()*40,85,50+Math.random()*30,1.5,2);
         }
       }
-    }
-
-    // Lightning veins
-    if (heartBuilt) {
-      lightningTimer += dt;
-      if (lightningTimer > 0.12) { lightningTimer=0; spawnLightning(); }
-      for (let li = lightnings.length-1; li>=0; li--) {
-        const l = lightnings[li];
-        l.life -= 1;
-        if (l.life <= 0) { lightnings.splice(li,1); continue; }
-        const lr = l.life/l.maxLife;
-        ctx.beginPath();
-        ctx.moveTo(l.x1,l.y1);
-        // jagged midpoint
+      lightningTimer+=dt;
+      if(lightningTimer>0.12){lightningTimer=0;spawnLightning();}
+      for(let li=lightnings.length-1;li>=0;li--){
+        const l=lightnings[li];l.life-=1;
+        if(l.life<=0){lightnings.splice(li,1);continue;}
+        const lr=l.life/l.maxLife;
         const mx=(l.x1+l.x2)/2+(Math.random()-0.5)*30;
         const my=(l.y1+l.y2)/2+(Math.random()-0.5)*30;
-        ctx.quadraticCurveTo(mx,my,l.x2,l.y2);
-        ctx.strokeStyle=`hsla(${l.hue},90%,75%,${lr*0.8})`;
-        ctx.lineWidth=lr*1.5;
-        ctx.shadowColor=`hsl(${l.hue},100%,80%)`;
-        ctx.shadowBlur=8;
-        ctx.stroke();
-        ctx.shadowBlur=0;
+        ctx.beginPath();ctx.moveTo(l.x1,l.y1);ctx.quadraticCurveTo(mx,my,l.x2,l.y2);
+        ctx.strokeStyle=`hsla(${l.hue},90%,75%,${lr*0.8})`;ctx.lineWidth=lr*1.5;
+        ctx.shadowColor=`hsl(${l.hue},100%,80%)`;ctx.shadowBlur=8;ctx.stroke();ctx.shadowBlur=0;
       }
     }
   }
 
-  // Collision flash (phase 3)
-  if (phase===3) {
-    const flashAge = time - 5;
-    const flashAlpha = Math.max(0, 0.9 - flashAge*2.5);
-    if (flashAlpha > 0) {
-      const fg = ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*0.5);
+  // Collision flash
+  if(phase===3){
+    const flashAlpha=Math.max(0,0.9-(time-3.8)*2.5);
+    if(flashAlpha>0){
+      const fg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*0.5);
       fg.addColorStop(0,`rgba(255,220,240,${flashAlpha})`);
       fg.addColorStop(0.3,`rgba(255,100,180,${flashAlpha*0.5})`);
       fg.addColorStop(1,'transparent');
-      ctx.fillStyle=fg;
-      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle=fg;ctx.fillRect(0,0,W,H);
     }
   }
 
-  // Shooting stars
   drawShootingStars(dt);
 
-  // Vignette
-  const vig = ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.3,cx,cy,Math.min(W,H)*0.85);
-  vig.addColorStop(0,'transparent');
-  vig.addColorStop(1,'rgba(0,0,5,0.55)');
-  ctx.fillStyle=vig;
-  ctx.fillRect(0,0,W,H);
-
+  const vig=ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.3,cx,cy,Math.min(W,H)*0.85);
+  vig.addColorStop(0,'transparent');vig.addColorStop(1,'rgba(0,0,5,0.55)');
+  ctx.fillStyle=vig;ctx.fillRect(0,0,W,H);
   ctx.restore();
 
-  // Floating stardust (fixed layer, no transform)
-  if (Math.random() < 0.3) {
-    const dx = Math.random()*W, dy = Math.random()*H;
-    ctx.beginPath();
-    ctx.arc(dx,dy,Math.random()*1.2,0,Math.PI*2);
-    ctx.fillStyle=`rgba(255,240,255,${Math.random()*0.3})`;
-    ctx.fill();
+  if(Math.random()<0.3){
+    ctx.beginPath();ctx.arc(Math.random()*W,Math.random()*H,Math.random()*1.2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,240,255,${Math.random()*0.3})`;ctx.fill();
   }
-
   requestAnimationFrame(frame);
 }
+requestAnimationFrame(ts=>{last=ts;frame(ts);});
 
-requestAnimationFrame(ts => { last=ts; frame(ts); });
-
-// ── Love Quotes ──────────────────────────────────────
-const loveQuotes = [
-  "A sister is both your mirror and your opposite — your forever person 🤍",
-  "In you, I found my first best friend and my greatest protector 💫",
-  "She is the one who knows me at my worst and loves me at my best 🌸",
-  "An elder sister is a hand that steadies you when the world shakes 🌟",
-  "No distance can dim the light of a sister's love ✨",
-  "You were my whole world before I even knew the world existed 🌙",
-  "Akka — the word that means home in a single breath 💖",
-  "She carried me in her heart long before I could carry myself 🌺",
-  "A sister's love is the poetry the heart never stops writing 🦋",
-  "Every good thing in me has a little bit of her in it 🌹"
-];
-
-let currentQuote = 0;
-let quoteVisible = false;
-const quoteEl = document.getElementById('quote-text');
-
-function showNextQuote() {
-  // Fade out
-  quoteEl.classList.remove('visible');
-  setTimeout(() => {
-    currentQuote = (currentQuote + 1) % loveQuotes.length;
-    quoteEl.textContent = loveQuotes[currentQuote];
-    // Fade in
-    setTimeout(() => quoteEl.classList.add('visible'), 100);
-  }, 1800);
-}
-
-// Show each quote once for 5s, no loop, then hide forever
-let quotesDone = false;
-function runQuotesOnce() {
-  if (quotesDone) return;
-  quotesDone = true;
-  let qi = 0;
-  function showOne() {
-    if (qi >= loveQuotes.length) {
-      // All done — fade out and remove
-      quoteEl.classList.remove('visible');
-      return;
-    }
-    quoteEl.classList.remove('visible');
-    setTimeout(() => {
-      quoteEl.textContent = loveQuotes[qi];
-      quoteEl.classList.add('visible');
-      qi++;
-      setTimeout(showOne, 5000); // 5s per quote then next
-    }, 1200); // fade transition gap
+// ══════════════════════════════════════════════════
+// ROSE PETALS
+// ══════════════════════════════════════════════════
+const petalCanvas=document.getElementById('petals-canvas');
+const pc=petalCanvas.getContext('2d');
+function resizePetals(){petalCanvas.width=window.innerWidth;petalCanvas.height=window.innerHeight;}
+resizePetals(); window.addEventListener('resize',resizePetals);
+const petals=[]; const PETAL_COUNT=38;
+function createPetal(){return{x:Math.random()*petalCanvas.width,y:-30-Math.random()*100,size:7+Math.random()*11,speedY:0.6+Math.random()*1.2,speedX:(Math.random()-0.5)*1.2,rotation:Math.random()*Math.PI*2,rotSpeed:(Math.random()-0.5)*0.04,sway:Math.random()*Math.PI*2,swaySpeed:0.01+Math.random()*0.02,swayAmt:20+Math.random()*30,alpha:0.5+Math.random()*0.5,hue:340+Math.random()*30};}
+for(let i=0;i<PETAL_COUNT;i++){const p=createPetal();p.y=Math.random()*petalCanvas.height;petals.push(p);}
+function updatePetals(dt){
+  pc.clearRect(0,0,petalCanvas.width,petalCanvas.height);
+  for(const p of petals){
+    p.sway+=p.swaySpeed;p.x+=p.speedX+Math.sin(p.sway)*p.swayAmt*dt;p.y+=p.speedY;p.rotation+=p.rotSpeed;
+    if(p.y>petalCanvas.height+40)Object.assign(p,createPetal());
+    pc.save();pc.translate(p.x,p.y);pc.rotate(p.rotation);
+    pc.globalAlpha=p.alpha*(phase>=3?1:0);
+    pc.beginPath();pc.moveTo(0,0);
+    pc.bezierCurveTo(p.size*0.5,-p.size*0.8,p.size*1.2,-p.size*0.5,p.size,0);
+    pc.bezierCurveTo(p.size*1.2,p.size*0.5,p.size*0.5,p.size*0.8,0,0);
+    const pg=pc.createRadialGradient(p.size*0.4,0,0,p.size*0.4,0,p.size);
+    pg.addColorStop(0,`hsla(${p.hue},90%,88%,1)`);pg.addColorStop(0.5,`hsla(${p.hue},80%,75%,0.9)`);pg.addColorStop(1,`hsla(${p.hue+10},70%,60%,0.6)`);
+    pc.fillStyle=pg;pc.shadowColor=`hsla(${p.hue},80%,70%,0.5)`;pc.shadowBlur=8;pc.fill();pc.restore();
   }
-  showOne();
 }
-// Start quotes after heart built (~6s into animation with speedup)
-setTimeout(runQuotesOnce, 6000);
+let petalLast=0;
+(function petalLoop(ts){const dt=Math.min((ts-petalLast)/1000,0.05);petalLast=ts;updatePetals(dt);requestAnimationFrame(petalLoop);})(0);
 
-// ── Sparkle Cursor Trail ─────────────────────────────
-const trailCanvas = document.getElementById('cursor-trail-canvas');
-const tc = trailCanvas.getContext('2d');
-trailCanvas.width = window.innerWidth;
-trailCanvas.height = window.innerHeight;
-window.addEventListener('resize', () => {
-  trailCanvas.width = window.innerWidth;
-  trailCanvas.height = window.innerHeight;
-});
-
-const trailParticles = [];
-let mouseX = -999, mouseY = -999;
-
-window.addEventListener('mousemove', (e) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-  // Spawn sparkles on move
-  for (let i = 0; i < 4; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 2.5 + 0.5;
-    trailParticles.push({
-      x: mouseX + (Math.random()-0.5)*8,
-      y: mouseY + (Math.random()-0.5)*8,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 1.2,
-      life: 1,
-      decay: 0.025 + Math.random()*0.03,
-      r: 1.5 + Math.random() * 3,
-      hue: Math.random() < 0.5 ? 330 + Math.random()*40 : 40 + Math.random()*20,
-      shape: Math.random() < 0.4 ? 'star' : 'circle'
-    });
+// ══════════════════════════════════════════════════
+// CURSOR TRAIL
+// ══════════════════════════════════════════════════
+const trailCanvas=document.getElementById('cursor-trail-canvas');
+const tc=trailCanvas.getContext('2d');
+function resizeTrail(){trailCanvas.width=window.innerWidth;trailCanvas.height=window.innerHeight;}
+resizeTrail(); window.addEventListener('resize',resizeTrail);
+const trailParticles=[];
+window.addEventListener('mousemove',e=>{
+  for(let i=0;i<4;i++){
+    const angle=Math.random()*Math.PI*2,speed=Math.random()*2.5+0.5;
+    trailParticles.push({x:e.clientX+(Math.random()-0.5)*8,y:e.clientY+(Math.random()-0.5)*8,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-1.2,life:1,decay:0.025+Math.random()*0.03,r:1.5+Math.random()*3,hue:Math.random()<0.5?330+Math.random()*40:40+Math.random()*20,star:Math.random()<0.4});
   }
 });
-
-function drawStar(ctx, x, y, r, alpha, hue) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(Date.now() * 0.003);
-  ctx.beginPath();
-  for (let i = 0; i < 5; i++) {
-    const outerAngle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
-    const innerAngle = outerAngle + (2 * Math.PI) / 10;
-    if (i === 0) ctx.moveTo(Math.cos(outerAngle)*r, Math.sin(outerAngle)*r);
-    else ctx.lineTo(Math.cos(outerAngle)*r, Math.sin(outerAngle)*r);
-    ctx.lineTo(Math.cos(innerAngle)*r*0.45, Math.sin(innerAngle)*r*0.45);
-  }
-  ctx.closePath();
-  ctx.fillStyle = `hsla(${hue},100%,80%,${alpha})`;
-  ctx.shadowColor = `hsla(${hue},100%,90%,${alpha})`;
-  ctx.shadowBlur = 8;
-  ctx.fill();
-  ctx.restore();
-}
-
-function updateTrail(dt) {
-  tc.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
-  for (let i = trailParticles.length - 1; i >= 0; i--) {
-    const p = trailParticles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.06; // gravity
-    p.life -= p.decay;
-    if (p.life <= 0) { trailParticles.splice(i, 1); continue; }
-
-    if (p.shape === 'star') {
-      drawStar(tc, p.x, p.y, p.r * p.life, p.life * 0.9, p.hue);
-    } else {
-      // Glowing circle
-      const g = tc.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 2.5);
-      g.addColorStop(0, `hsla(${p.hue},100%,90%,${p.life})`);
-      g.addColorStop(1, 'transparent');
-      tc.fillStyle = g;
+function updateTrail(dt){
+  tc.clearRect(0,0,trailCanvas.width,trailCanvas.height);
+  for(let i=trailParticles.length-1;i>=0;i--){
+    const p=trailParticles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.06;p.life-=p.decay;
+    if(p.life<=0){trailParticles.splice(i,1);continue;}
+    if(p.star){
+      tc.save();tc.translate(p.x,p.y);tc.rotate(Date.now()*0.003);
       tc.beginPath();
-      tc.arc(p.x, p.y, p.r * 2.5, 0, Math.PI * 2);
-      tc.fill();
+      for(let s=0;s<5;s++){const oa=(s*4*Math.PI)/5-Math.PI/2,ia=oa+(2*Math.PI)/10;
+        s===0?tc.moveTo(Math.cos(oa)*p.r*p.life,Math.sin(oa)*p.r*p.life):tc.lineTo(Math.cos(oa)*p.r*p.life,Math.sin(oa)*p.r*p.life);
+        tc.lineTo(Math.cos(ia)*p.r*p.life*0.45,Math.sin(ia)*p.r*p.life*0.45);}
+      tc.closePath();tc.fillStyle=`hsla(${p.hue},100%,80%,${p.life})`;tc.fill();tc.restore();
+    }else{
+      const g=tc.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.5);
+      g.addColorStop(0,`hsla(${p.hue},100%,90%,${p.life})`);g.addColorStop(1,'transparent');
+      tc.fillStyle=g;tc.beginPath();tc.arc(p.x,p.y,p.r*2.5,0,Math.PI*2);tc.fill();
     }
   }
 }
 
-// ── Butterflies ──────────────────────────────────────
-const butterflyCanvas = document.createElement('canvas');
-butterflyCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;';
+// ══════════════════════════════════════════════════
+// BUTTERFLIES
+// ══════════════════════════════════════════════════
+const butterflyCanvas=document.createElement('canvas');
+butterflyCanvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;';
 document.body.appendChild(butterflyCanvas);
-const bc = butterflyCanvas.getContext('2d');
-butterflyCanvas.width = window.innerWidth;
-butterflyCanvas.height = window.innerHeight;
-window.addEventListener('resize', () => {
-  butterflyCanvas.width = window.innerWidth;
-  butterflyCanvas.height = window.innerHeight;
-});
-
-const butterflies = [];
-function createButterfly() {
-  const fromLeft = Math.random() < 0.5;
-  return {
-    x: fromLeft ? -60 : window.innerWidth + 60,
-    y: 80 + Math.random() * window.innerHeight * 0.7,
-    vx: fromLeft ? 1.2 + Math.random()*1.5 : -(1.2 + Math.random()*1.5),
-    vy: (Math.random()-0.5)*0.8,
-    wingPhase: Math.random()*Math.PI*2,
-    wingSpeed: 0.08 + Math.random()*0.07,
-    size: 14 + Math.random()*16,
-    hue: [330, 280, 40, 200][Math.floor(Math.random()*4)],
-    alpha: 0.7 + Math.random()*0.3,
-    wanderAngle: 0,
-    wanderSpeed: 0.02 + Math.random()*0.02,
-    life: 1
-  };
+const bc=butterflyCanvas.getContext('2d');
+function resizeBfly(){butterflyCanvas.width=window.innerWidth;butterflyCanvas.height=window.innerHeight;}
+resizeBfly(); window.addEventListener('resize',resizeBfly);
+const butterflies=[];
+function createButterfly(){const fromLeft=Math.random()<0.5;return{x:fromLeft?-60:window.innerWidth+60,y:80+Math.random()*window.innerHeight*0.7,vx:fromLeft?1.2+Math.random()*1.5:-(1.2+Math.random()*1.5),vy:(Math.random()-0.5)*0.8,wingPhase:Math.random()*Math.PI*2,wingSpeed:0.08+Math.random()*0.07,size:14+Math.random()*16,hue:[330,280,40,200][Math.floor(Math.random()*4)],alpha:0.7+Math.random()*0.3,wanderAngle:0,wanderSpeed:0.02+Math.random()*0.02};}
+for(let i=0;i<5;i++){const b=createButterfly();b.x=Math.random()*window.innerWidth;b.y=80+Math.random()*window.innerHeight*0.7;butterflies.push(b);}
+function drawButterfly(b){
+  bc.save();bc.translate(b.x,b.y);
+  const wingW=b.size*Math.abs(Math.sin(b.wingPhase));
+  const wg=side=>{const g=bc.createRadialGradient(side*wingW*0.3,-b.size*0.2,0,side*wingW*0.5,0,b.size);g.addColorStop(0,`hsla(${b.hue},90%,85%,${b.alpha})`);g.addColorStop(0.5,`hsla(${b.hue+15},80%,70%,${b.alpha*0.8})`);g.addColorStop(1,`hsla(${b.hue+30},70%,55%,${b.alpha*0.3})`);return g;};
+  bc.shadowColor=`hsla(${b.hue},90%,80%,0.6)`;bc.shadowBlur=12;
+  [-1,1].forEach(side=>{bc.beginPath();bc.moveTo(0,0);bc.bezierCurveTo(side*wingW*0.3,-b.size*0.8,side*wingW*1.1,-b.size*0.5,side*wingW,0);bc.bezierCurveTo(side*wingW*0.9,b.size*0.3,side*wingW*0.2,b.size*0.1,0,0);bc.fillStyle=wg(side);bc.fill();});
+  [-1,1].forEach(side=>{bc.beginPath();bc.moveTo(0,0);bc.bezierCurveTo(side*wingW*0.8,b.size*0.2,side*wingW*0.9,b.size*0.9,side*wingW*0.4,b.size*0.8);bc.bezierCurveTo(side*wingW*0.1,b.size*0.9,0,b.size*0.5,0,0);bc.fillStyle=wg(side);bc.fill();});
+  bc.beginPath();bc.ellipse(0,0,1.5,b.size*0.45,0,0,Math.PI*2);bc.fillStyle=`hsla(${b.hue},60%,30%,0.9)`;bc.fill();
+  bc.shadowBlur=0;bc.restore();
 }
-
-// Start with a few butterflies
-for (let i = 0; i < 5; i++) {
-  const b = createButterfly();
-  b.x = Math.random() * window.innerWidth;
-  b.y = 80 + Math.random() * window.innerHeight * 0.7;
-  butterflies.push(b);
-}
-
-function drawButterfly(ctx, b) {
-  ctx.save();
-  ctx.translate(b.x, b.y);
-  const flap = Math.sin(b.wingPhase);
-  const wingW = b.size * Math.abs(flap);
-
-  // Wing gradient
-  const wg = (side) => {
-    const g = ctx.createRadialGradient(side * wingW * 0.3, -b.size*0.2, 0, side * wingW * 0.5, 0, b.size);
-    g.addColorStop(0,   `hsla(${b.hue},90%,85%,${b.alpha})`);
-    g.addColorStop(0.5, `hsla(${b.hue+15},80%,70%,${b.alpha*0.8})`);
-    g.addColorStop(1,   `hsla(${b.hue+30},70%,55%,${b.alpha*0.3})`);
-    return g;
-  };
-
-  // Upper wings
-  ctx.shadowColor = `hsla(${b.hue},90%,80%,0.6)`;
-  ctx.shadowBlur = 12;
-  [-1, 1].forEach(side => {
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(side*wingW*0.3, -b.size*0.8, side*wingW*1.1, -b.size*0.5, side*wingW, 0);
-    ctx.bezierCurveTo(side*wingW*0.9, b.size*0.3, side*wingW*0.2, b.size*0.1, 0, 0);
-    ctx.fillStyle = wg(side);
-    ctx.fill();
-  });
-
-  // Lower wings
-  [-1, 1].forEach(side => {
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.bezierCurveTo(side*wingW*0.8, b.size*0.2, side*wingW*0.9, b.size*0.9, side*wingW*0.4, b.size*0.8);
-    ctx.bezierCurveTo(side*wingW*0.1, b.size*0.9, 0, b.size*0.5, 0, 0);
-    ctx.fillStyle = wg(side);
-    ctx.fill();
-  });
-
-  // Body
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 1.5, b.size*0.45, 0, 0, Math.PI*2);
-  ctx.fillStyle = `hsla(${b.hue},60%,30%,0.9)`;
-  ctx.fill();
-
-  // Antennae
-  ctx.shadowBlur = 0;
-  [-1,1].forEach(s => {
-    ctx.beginPath();
-    ctx.moveTo(0, -b.size*0.4);
-    ctx.quadraticCurveTo(s*b.size*0.4, -b.size*1.0, s*b.size*0.5, -b.size*1.1);
-    ctx.strokeStyle = `hsla(${b.hue},60%,60%,0.7)`;
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(s*b.size*0.5, -b.size*1.1, 2, 0, Math.PI*2);
-    ctx.fillStyle = `hsla(${b.hue},80%,75%,0.9)`;
-    ctx.fill();
-  });
-
-  ctx.restore();
-}
-
-let butterflySpawnTimer = 0;
-function updateButterflies(dt) {
-  bc.clearRect(0, 0, butterflyCanvas.width, butterflyCanvas.height);
-
-  butterflySpawnTimer += dt;
-  if (butterflySpawnTimer > 4 + Math.random()*3 && butterflies.length < 9) {
-    butterflySpawnTimer = 0;
-    butterflies.push(createButterfly());
-  }
-
-  for (let i = butterflies.length-1; i >= 0; i--) {
-    const b = butterflies[i];
-    b.wingPhase += b.wingSpeed;
-    b.wanderAngle += (Math.random()-0.5)*b.wanderSpeed;
-    b.vx += Math.cos(b.wanderAngle)*0.04;
-    b.vy += Math.sin(b.wanderAngle)*0.04;
-    // Dampen velocity
-    b.vx *= 0.98; b.vy *= 0.98;
-    b.x += b.vx; b.y += b.vy;
-    // Bounce vertically
-    if (b.y < 40) b.vy += 0.2;
-    if (b.y > butterflyCanvas.height - 40) b.vy -= 0.2;
-
-    if (b.x < -100 || b.x > butterflyCanvas.width + 100) {
-      butterflies.splice(i, 1); continue;
-    }
-    drawButterfly(bc, b);
+let bflySpawnT=0;
+function updateButterflies(dt){
+  bc.clearRect(0,0,butterflyCanvas.width,butterflyCanvas.height);
+  bflySpawnT+=dt;if(bflySpawnT>4+Math.random()*3&&butterflies.length<9){bflySpawnT=0;butterflies.push(createButterfly());}
+  for(let i=butterflies.length-1;i>=0;i--){
+    const b=butterflies[i];b.wingPhase+=b.wingSpeed;b.wanderAngle+=(Math.random()-0.5)*b.wanderSpeed;
+    b.vx+=Math.cos(b.wanderAngle)*0.04;b.vy+=Math.sin(b.wanderAngle)*0.04;b.vx*=0.98;b.vy*=0.98;
+    b.x+=b.vx;b.y+=b.vy;if(b.y<40)b.vy+=0.2;if(b.y>butterflyCanvas.height-40)b.vy-=0.2;
+    if(b.x<-100||b.x>butterflyCanvas.width+100){butterflies.splice(i,1);continue;}
+    drawButterfly(b);
   }
 }
 
-// ── Unified extra loop ───────────────────────────────
-let extraLast = 0;
-function extraLoop(ts) {
-  const dt = Math.min((ts - extraLast)/1000, 0.05);
-  extraLast = ts;
-  updateTrail(dt);
-  updateButterflies(dt);
-  requestAnimationFrame(extraLoop);
-}
-requestAnimationFrame(extraLoop);
-
-
-// ── Shooting Stars ──────────────────────────────────
-const shootingStars = [];
-let shootTimer = 0;
-function spawnShootingStar() {
-  const side = Math.random() < 0.5;
-  shootingStars.push({
-    x: side ? -20 : W + 20,
-    y: Math.random() * H * 0.6,
-    vx: side ? (6 + Math.random()*8) : -(6 + Math.random()*8),
-    vy: (Math.random() - 0.3) * 4,
-    len: 80 + Math.random() * 140,
-    alpha: 1,
-    life: 1,
-    hue: 40 + Math.random() * 40
-  });
-}
-
-function drawShootingStars(dt) {
-  shootTimer += dt;
-  if (shootTimer > 1.8 + Math.random()) { shootTimer = 0; spawnShootingStar(); }
-  for (let i = shootingStars.length - 1; i >= 0; i--) {
-    const s = shootingStars[i];
-    s.x += s.vx; s.y += s.vy;
-    s.life -= dt * 0.9;
-    if (s.life <= 0 || s.x < -200 || s.x > W+200) { shootingStars.splice(i,1); continue; }
-    const tailX = s.x - Math.sign(s.vx) * s.len;
-    const grad = ctx.createLinearGradient(tailX, s.y - Math.abs(s.vy)*s.len/Math.abs(s.vx), s.x, s.y);
-    grad.addColorStop(0, 'transparent');
-    grad.addColorStop(0.6, `hsla(${s.hue},100%,80%,${s.life * 0.4})`);
-    grad.addColorStop(1,   `hsla(${s.hue},100%,98%,${s.life})`);
-    ctx.beginPath();
-    ctx.moveTo(tailX, s.y - Math.sign(s.vy)*s.len*0.3);
-    ctx.lineTo(s.x, s.y);
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 1.5 + s.life;
-    ctx.shadowColor = `hsla(${s.hue},100%,90%,0.8)`;
-    ctx.shadowBlur = 6;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    // Sparkle tip
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, 2 + s.life*1.5, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(255,255,220,${s.life})`;
-    ctx.fill();
-  }
-}
-
-// ── Rose Petals ──────────────────────────────────────
-const petalCanvas = document.getElementById('petals-canvas');
-const pc = petalCanvas.getContext('2d');
-petalCanvas.width = window.innerWidth;
-petalCanvas.height = window.innerHeight;
-window.addEventListener('resize', () => {
-  petalCanvas.width = window.innerWidth;
-  petalCanvas.height = window.innerHeight;
-});
-
-const petals = [];
-const PETAL_COUNT = 38;
-
-function createPetal() {
-  return {
-    x: Math.random() * petalCanvas.width,
-    y: -30 - Math.random() * 100,
-    size: 7 + Math.random() * 11,
-    speedY: 0.6 + Math.random() * 1.2,
-    speedX: (Math.random() - 0.5) * 1.2,
-    rotation: Math.random() * Math.PI * 2,
-    rotSpeed: (Math.random() - 0.5) * 0.04,
-    sway: Math.random() * Math.PI * 2,
-    swaySpeed: 0.01 + Math.random() * 0.02,
-    swayAmt: 20 + Math.random() * 30,
-    alpha: 0.5 + Math.random() * 0.5,
-    hue: 340 + Math.random() * 30
-  };
-}
-
-for (let i = 0; i < PETAL_COUNT; i++) {
-  const p = createPetal();
-  p.y = Math.random() * petalCanvas.height; // start scattered
-  petals.push(p);
-}
-
-function drawPetal(ctx, p) {
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(p.rotation);
-  ctx.globalAlpha = p.alpha * Math.min(1, phase >= 3 ? 1 : 0);
-  // Petal shape
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.bezierCurveTo(p.size*0.5, -p.size*0.8, p.size*1.2, -p.size*0.5, p.size, 0);
-  ctx.bezierCurveTo(p.size*1.2, p.size*0.5, p.size*0.5, p.size*0.8, 0, 0);
-  const pg = ctx.createRadialGradient(p.size*0.4, 0, 0, p.size*0.4, 0, p.size);
-  pg.addColorStop(0, `hsla(${p.hue},90%,88%,1)`);
-  pg.addColorStop(0.5, `hsla(${p.hue},80%,75%,0.9)`);
-  pg.addColorStop(1, `hsla(${p.hue+10},70%,60%,0.6)`);
-  ctx.fillStyle = pg;
-  ctx.shadowColor = `hsla(${p.hue},80%,70%,0.5)`;
-  ctx.shadowBlur = 8;
-  ctx.fill();
-  ctx.restore();
-}
-
-function updatePetals(dt) {
-  pc.clearRect(0, 0, petalCanvas.width, petalCanvas.height);
-  for (const p of petals) {
-    p.sway += p.swaySpeed;
-    p.x += p.speedX + Math.sin(p.sway) * p.swayAmt * dt;
-    p.y += p.speedY;
-    p.rotation += p.rotSpeed;
-    if (p.y > petalCanvas.height + 40) {
-      Object.assign(p, createPetal());
-    }
-    drawPetal(pc, p);
-  }
-}
-
-// ── Heartbeat Audio ──────────────────────────────────
-let audioCtx = null;
-let soundOn = false;
-let heartbeatInterval = null;
-
-function initAudio() {
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-}
-
-function playHeartbeat() {
-  if (!audioCtx || !soundOn) return;
-  // Two-thud heartbeat: lub-dub
-  [0, 0.25].forEach((delay, i) => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 120;
-    osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(i === 0 ? 58 : 48, audioCtx.currentTime + delay);
-    osc.frequency.exponentialRampToValueAtTime(28, audioCtx.currentTime + delay + 0.18);
-    gain.gain.setValueAtTime(0, audioCtx.currentTime + delay);
-    gain.gain.linearRampToValueAtTime(0.55, audioCtx.currentTime + delay + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 0.22);
-    osc.start(audioCtx.currentTime + delay);
-    osc.stop(audioCtx.currentTime + delay + 0.25);
-  });
-
-  // Soft ambient tone
-  const amb = audioCtx.createOscillator();
-  const ambGain = audioCtx.createGain();
-  const ambFilter = audioCtx.createBiquadFilter();
-  ambFilter.type = 'bandpass';
-  ambFilter.frequency.value = 220;
-  ambFilter.Q.value = 5;
-  amb.connect(ambFilter); ambFilter.connect(ambGain); ambGain.connect(audioCtx.destination);
-  amb.type = 'sine';
-  amb.frequency.value = 220 + Math.sin(Date.now()*0.001) * 10;
-  ambGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-  ambGain.gain.linearRampToValueAtTime(0.0, audioCtx.currentTime + 0.9);
-  amb.start(audioCtx.currentTime);
-  amb.stop(audioCtx.currentTime + 1);
-}
-
-function startHeartbeat() {
-  playHeartbeat();
-  heartbeatInterval = setInterval(playHeartbeat, 900);
-}
-function stopHeartbeat() {
-  clearInterval(heartbeatInterval);
-}
-
-const soundBtn = document.getElementById('sound-btn');
-soundBtn.addEventListener('click', () => {
-  if (!audioCtx) initAudio();
-  soundOn = !soundOn;
-  soundBtn.textContent = soundOn ? '♪ Sound OFF' : '♪ Sound ON';
-  if (soundOn) startHeartbeat(); else stopHeartbeat();
-});
-
-// Hook shooting stars + petals into main loop
-const _origFrame = frame;
-function enhancedLoop(ts) {
-  // shooting stars drawn on main canvas inside save/restore
-  requestAnimationFrame(enhancedLoop);
-}
-
-// Patch: inject shooting stars & petals into the animation
-const origRAF = requestAnimationFrame;
-// Instead, we monkey-patch by re-running petals on each frame via a separate loop
-let petalLast = 0;
-function petalLoop(ts) {
-  const dt = Math.min((ts - petalLast) / 1000, 0.05);
-  petalLast = ts;
-  updatePetals(dt);
-  requestAnimationFrame(petalLoop);
-}
-requestAnimationFrame(petalLoop);
-
-</script>
-
-</html>
-
-// ── Click-the-Heart Hidden Message ──────────────────
-let heartClickable = false;
-// Show click hint as soon as heart is built
-function enableHeartClick() {
-  heartClickable = true;
-  const hint = document.getElementById('click-hint');
-  if (hint) { hint.classList.add('visible'); }
-}
-// Poll until heartBuilt
-const _hintCheck = setInterval(() => {
-  if (heartBuilt) { clearInterval(_hintCheck); enableHeartClick(); }
-}, 300);
-
-canvas.addEventListener('click', (e) => {
-  if (!heartClickable) return;
-  const dx = e.clientX - cx, dy = e.clientY - cy;
-  const scale = Math.min(W,H)*0.038;
-  if (Math.sqrt(dx*dx+dy*dy) < scale*16) {
-    document.getElementById('heart-msg-overlay').classList.add('open');
-
-  }
-});
-canvas.style.cursor = 'crosshair';
-
-
-// ── Golden Rain "I Love You Akka" ────────────────────
-const rainCanvas = document.createElement('canvas');
-rainCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;';
-document.body.appendChild(rainCanvas);
-const rc = rainCanvas.getContext('2d');
-rainCanvas.width = window.innerWidth;
-rainCanvas.height = window.innerHeight;
-window.addEventListener('resize', () => { rainCanvas.width = window.innerWidth; rainCanvas.height = window.innerHeight; });
-
-const rainWords = ['I Love You Akka 💛','✦','💖','⭐','HARSHUU','🌸','💫','Akka','♡','🌟','My Akka','💛','✨','Always','Forever'];
-const rainDrops = [];
-
-function createRainDrop() {
-  const word = rainWords[Math.floor(Math.random()*rainWords.length)];
-  const isSymbol = word.length <= 2;
-  return {
-    x: Math.random() * rainCanvas.width,
-    y: -40 - Math.random()*200,
-    word,
-    speed: 0.6 + Math.random()*1.1,
-    alpha: 0.7 + Math.random()*0.3,
-    size: isSymbol ? 16+Math.random()*14 : 11+Math.random()*8,
-    hue: Math.random() < 0.6 ? 42+Math.random()*18 : 330+Math.random()*30,
-    sway: Math.random()*Math.PI*2,
-    swaySpeed: 0.008+Math.random()*0.01,
-    swayAmt: 12+Math.random()*20,
-    rotation: (Math.random()-0.5)*0.3,
-    shimmer: Math.random()*Math.PI*2,
-    shimmerSpeed: 0.04+Math.random()*0.04
-  };
-}
-
-// Populate
-for (let i = 0; i < 55; i++) {
-  const d = createRainDrop();
-  d.y = Math.random()*rainCanvas.height;
-  rainDrops.push(d);
-}
-
-let rainActive = false;
-setTimeout(() => { rainActive = true; }, 7500);
-
-function updateRain(dt) {
-  if (!rainActive) return;
-  rc.clearRect(0,0,rainCanvas.width,rainCanvas.height);
-  for (const d of rainDrops) {
-    d.sway += d.swaySpeed;
-    d.shimmer += d.shimmerSpeed;
-    d.x += Math.sin(d.sway)*d.swayAmt*dt;
-    d.y += d.speed;
-    if (d.y > rainCanvas.height + 50) Object.assign(d, createRainDrop());
-
-    const shimmerAlpha = d.alpha * (0.7 + Math.sin(d.shimmer)*0.3);
-    rc.save();
-    rc.translate(d.x, d.y);
-    rc.rotate(d.rotation);
-    rc.font = `bold ${d.size}px Georgia, serif`;
-    rc.textAlign = 'center';
-    rc.textBaseline = 'middle';
-    rc.shadowColor = `hsla(${d.hue},100%,70%,${shimmerAlpha})`;
-    rc.shadowBlur = 12;
-    // Gold gradient per text
-    const tg = rc.createLinearGradient(-d.size*2, -d.size, d.size*2, d.size);
-    tg.addColorStop(0,   `hsla(${d.hue},100%,50%,${shimmerAlpha})`);
-    tg.addColorStop(0.4, `hsla(${d.hue+10},100%,75%,${shimmerAlpha})`);
-    tg.addColorStop(0.5, `hsla(55,100%,95%,${shimmerAlpha})`);
-    tg.addColorStop(0.6, `hsla(${d.hue+10},100%,75%,${shimmerAlpha})`);
-    tg.addColorStop(1,   `hsla(${d.hue},100%,50%,${shimmerAlpha})`);
-    rc.fillStyle = tg;
-    rc.fillText(d.word, 0, 0);
-    rc.shadowBlur = 0;
-    rc.restore();
-  }
-}
-
-// ── Confetti ─────────────────────────────────────────
-const confCanvas = document.createElement('canvas');
-confCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:7;';
+// ══════════════════════════════════════════════════
+// CONFETTI
+// ══════════════════════════════════════════════════
+const confCanvas=document.createElement('canvas');
+confCanvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:7;';
 document.body.appendChild(confCanvas);
-const cc = confCanvas.getContext('2d');
-confCanvas.width = window.innerWidth;
-confCanvas.height = window.innerHeight;
-window.addEventListener('resize', () => { confCanvas.width = window.innerWidth; confCanvas.height = window.innerHeight; });
-
-const confetti = [];
-const confColors = ['#ff6eb0','#ffd700','#ff4dd2','#00e5ff','#ff8c42','#c084fc','#ffd6e8','#fffacd'];
-
-function spawnConfetti(count, fromX) {
-  for (let i = 0; i < count; i++) {
-    confetti.push({
-      x: fromX !== undefined ? fromX : Math.random()*confCanvas.width,
-      y: fromX !== undefined ? confCanvas.height * 0.3 * Math.random() : -10,
-      vx: (Math.random()-0.5)*6,
-      vy: fromX !== undefined ? -(6+Math.random()*8) : 1+Math.random()*3,
-      rot: Math.random()*Math.PI*2,
-      rotV: (Math.random()-0.5)*0.15,
-      w: 6+Math.random()*10,
-      h: 4+Math.random()*6,
-      color: confColors[Math.floor(Math.random()*confColors.length)],
-      life: 1,
-      decay: 0.004+Math.random()*0.006,
-      shape: Math.random() < 0.4 ? 'circle' : Math.random() < 0.6 ? 'rect' : 'star'
-    });
-  }
+const cc=confCanvas.getContext('2d');
+function resizeConf(){confCanvas.width=window.innerWidth;confCanvas.height=window.innerHeight;}
+resizeConf(); window.addEventListener('resize',resizeConf);
+const confetti=[];
+const confColors=['#ff6eb0','#ffd700','#ff4dd2','#00e5ff','#ff8c42','#c084fc','#ffd6e8','#fffacd'];
+function spawnConfetti(count){
+  for(let i=0;i<count;i++){confetti.push({x:Math.random()*confCanvas.width,y:-10,vx:(Math.random()-0.5)*6,vy:1+Math.random()*3,rot:Math.random()*Math.PI*2,rotV:(Math.random()-0.5)*0.15,w:6+Math.random()*10,h:4+Math.random()*6,color:confColors[Math.floor(Math.random()*confColors.length)],life:1,decay:0.004+Math.random()*0.006,shape:Math.random()<0.4?'circle':Math.random()<0.6?'rect':'star'});}
 }
-
-let confFinale = false;
-function checkConfetti(dt) {
-  if (!heartBuilt && !confFinale) return;
-  if (heartBuilt && !confFinale) {
-    confFinale = true;
-    // Initial burst from both sides + top
-    spawnConfetti(180);
-    setTimeout(() => spawnConfetti(150), 600);
-    setTimeout(() => spawnConfetti(120), 1400);
-  }
+let confFinale=false;
+function checkConfetti(){
+  if(heartBuilt&&!confFinale){confFinale=true;spawnConfetti(180);setTimeout(()=>spawnConfetti(150),600);setTimeout(()=>spawnConfetti(120),1400);}
 }
-
-function updateConfetti(dt) {
+function updateConfetti(dt){
   cc.clearRect(0,0,confCanvas.width,confCanvas.height);
-  for (let i = confetti.length-1; i>=0; i--) {
-    const c = confetti[i];
-    c.x += c.vx; c.y += c.vy;
-    c.vy += 0.12; // gravity
-    c.vx *= 0.99;
-    c.rot += c.rotV;
-    c.life -= c.decay;
-    if (c.life <= 0 || c.y > confCanvas.height+20) { confetti.splice(i,1); continue; }
-    cc.save();
-    cc.translate(c.x, c.y);
-    cc.rotate(c.rot);
-    cc.globalAlpha = Math.min(1, c.life*1.5);
-    cc.fillStyle = c.color;
-    cc.shadowColor = c.color;
-    cc.shadowBlur = 4;
-    if (c.shape === 'circle') {
-      cc.beginPath(); cc.arc(0,0,c.w/2,0,Math.PI*2); cc.fill();
-    } else if (c.shape === 'rect') {
-      cc.fillRect(-c.w/2,-c.h/2,c.w,c.h);
-    } else {
-      // mini star
-      cc.beginPath();
-      for (let s=0;s<5;s++){
-        const a=(s*4*Math.PI)/5-Math.PI/2;
-        const ia=a+Math.PI/5;
-        s===0?cc.moveTo(Math.cos(a)*c.w/2,Math.sin(a)*c.w/2):cc.lineTo(Math.cos(a)*c.w/2,Math.sin(a)*c.w/2);
-        cc.lineTo(Math.cos(ia)*c.w/4,Math.sin(ia)*c.w/4);
-      }
-      cc.closePath(); cc.fill();
-    }
-    cc.shadowBlur = 0;
+  for(let i=confetti.length-1;i>=0;i--){
+    const c=confetti[i];c.x+=c.vx;c.y+=c.vy;c.vy+=0.12;c.vx*=0.99;c.rot+=c.rotV;c.life-=c.decay;
+    if(c.life<=0||c.y>confCanvas.height+20){confetti.splice(i,1);continue;}
+    cc.save();cc.translate(c.x,c.y);cc.rotate(c.rot);cc.globalAlpha=Math.min(1,c.life*1.5);
+    cc.fillStyle=c.color;cc.shadowColor=c.color;cc.shadowBlur=4;
+    if(c.shape==='circle'){cc.beginPath();cc.arc(0,0,c.w/2,0,Math.PI*2);cc.fill();}
+    else if(c.shape==='rect'){cc.fillRect(-c.w/2,-c.h/2,c.w,c.h);}
+    else{cc.beginPath();for(let s=0;s<5;s++){const a=(s*4*Math.PI)/5-Math.PI/2,ia=a+Math.PI/5;s===0?cc.moveTo(Math.cos(a)*c.w/2,Math.sin(a)*c.w/2):cc.lineTo(Math.cos(a)*c.w/2,Math.sin(a)*c.w/2);cc.lineTo(Math.cos(ia)*c.w/4,Math.sin(ia)*c.w/4);}cc.closePath();cc.fill();}
     cc.restore();
   }
 }
 
-// ── Master extra loop (extended) ─────────────────────
-let extraLast2 = 0;
-function extraLoop2(ts) {
-  const dt2 = Math.min((ts-extraLast2)/1000, 0.05);
-  extraLast2 = ts;
-  updateRain(dt2);
-  updateConfetti(dt2);
-  checkConfetti(dt2);
-  requestAnimationFrame(extraLoop2);
+// ══════════════════════════════════════════════════
+// AUDIO
+// ══════════════════════════════════════════════════
+let audioCtx=null,soundOn=false,heartbeatInterval=null;
+function initAudio(){audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+function playHeartbeat(){
+  if(!audioCtx||!soundOn)return;
+  [0,0.25].forEach((delay,i)=>{
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
+    filter.type='lowpass';filter.frequency.value=120;
+    osc.connect(filter);filter.connect(gain);gain.connect(audioCtx.destination);
+    osc.type='sine';osc.frequency.setValueAtTime(i===0?58:48,audioCtx.currentTime+delay);
+    osc.frequency.exponentialRampToValueAtTime(28,audioCtx.currentTime+delay+0.18);
+    gain.gain.setValueAtTime(0,audioCtx.currentTime+delay);
+    gain.gain.linearRampToValueAtTime(0.55,audioCtx.currentTime+delay+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+delay+0.22);
+    osc.start(audioCtx.currentTime+delay);osc.stop(audioCtx.currentTime+delay+0.25);
+  });
 }
-requestAnimationFrame(extraLoop2);
+function startHeartbeat(){playHeartbeat();heartbeatInterval=setInterval(playHeartbeat,900);}
+function stopHeartbeat(){clearInterval(heartbeatInterval);}
+document.getElementById('sound-btn').addEventListener('click',()=>{
+  if(!audioCtx)initAudio();soundOn=!soundOn;
+  document.getElementById('sound-btn').textContent=soundOn?'♪ Sound OFF':'♪ Sound ON';
+  if(soundOn)startHeartbeat();else stopHeartbeat();
+});
+
+// ══════════════════════════════════════════════════
+// SHATTER + TYPEWRITER REVEAL
+// ══════════════════════════════════════════════════
+const shatterCanvas=document.getElementById('shatter-canvas');
+const sc=shatterCanvas.getContext('2d');
+function resizeShatter(){shatterCanvas.width=window.innerWidth;shatterCanvas.height=window.innerHeight;}
+resizeShatter(); window.addEventListener('resize',resizeShatter);
+
+let shatterPieces=[],shatterActive=false,heartBroken=false;
+
+function triggerHeartShatter(){
+  if(heartBroken)return;
+  heartBroken=true; shatterActive=true;
+
+  // Hide reveal button
+  const btn=document.getElementById('reveal-btn');
+  btn.classList.remove('visible'); btn.style.pointerEvents='none';
+
+  // Shatter the heart outline
+  const scale=Math.min(W,H)*0.038;
+  for(let i=0;i<160;i++){
+    const t=Math.random()*Math.PI*2;
+    const p=heartPoint(t,scale);
+    const ang=Math.atan2(p.y-cy,p.x-cx);
+    const speed=3+Math.random()*10;
+    const hue=Math.random()<0.6?330+Math.random()*40:280+Math.random()*50;
+    shatterPieces.push({x:p.x,y:p.y,vx:Math.cos(ang)*speed*(0.6+Math.random()),vy:Math.sin(ang)*speed*(0.6+Math.random())-2,rot:Math.random()*Math.PI*2,rotV:(Math.random()-0.5)*0.22,size:5+Math.random()*14,hue,life:1,decay:0.007+Math.random()*0.01,shape:Math.floor(Math.random()*3)});
+  }
+  heartParts=[];
+
+  // Show message screen immediately
+  showMessageScreen();
+}
+
+function drawShatter(dt){
+  sc.clearRect(0,0,shatterCanvas.width,shatterCanvas.height);
+  for(let i=shatterPieces.length-1;i>=0;i--){
+    const p=shatterPieces[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.18;p.vx*=0.97;p.vy*=0.97;p.rot+=p.rotV;p.life-=p.decay;
+    if(p.life<=0){shatterPieces.splice(i,1);continue;}
+    sc.save();sc.translate(p.x,p.y);sc.rotate(p.rot);sc.globalAlpha=p.life;
+    sc.shadowColor=`hsl(${p.hue},100%,75%)`;sc.shadowBlur=14;sc.fillStyle=`hsl(${p.hue},90%,72%)`;
+    const s=p.size*p.life;
+    if(p.shape===0){sc.beginPath();sc.moveTo(0,-s);sc.lineTo(s*0.65,s*0.5);sc.lineTo(-s*0.65,s*0.5);sc.closePath();sc.fill();}
+    else if(p.shape===1){sc.beginPath();sc.moveTo(0,-s);sc.lineTo(s*0.45,0);sc.lineTo(0,s);sc.lineTo(-s*0.45,0);sc.closePath();sc.fill();}
+    else{sc.strokeStyle=`hsl(${p.hue},100%,82%)`;sc.lineWidth=2;sc.beginPath();sc.moveTo(-s,0);sc.lineTo(s,0);sc.stroke();}
+    sc.shadowBlur=0;sc.restore();
+  }
+}
+
+// Typewriter message
+const MESSAGE_LINES=[
+  "Akka 💛",
+  "",
+  "I've been holding these words in my heart for a long time,",
+  "and today I just want to say everything honestly.",
+  "",
+  "From the day you became part of my life, something changed in me.",
+  "The way you speak, the way you guide,",
+  "the calm strength in your voice,",
+  "and the care hidden even in your strictness —",
+  "all of it has shaped me more than you will ever realize.",
+  "",
+  "You may think you are just being normal…",
+  "but for me, you are someone very special.",
+  "",
+  "You are not just someone I call \"Akka.\"",
+  "You are truly my elder sister in every sense —",
+  "in guidance, in protection, in concern,",
+  "and in the silent support you give.",
+  "",
+  "When you advise me, I listen seriously",
+  "because your words matter to me.",
+  "When you appreciate me, even a little,",
+  "it motivates me for days.",
+  "When you believe in me,",
+  "it gives me strength to believe in myself.",
+  "",
+  "Sometimes I may not express how much you mean to me.",
+  "I may act normal or quiet.",
+  "But inside, I value you more than I can show.",
+  "Your presence makes me feel safe.",
+  "Your attention makes me happy.",
+  "Even small conversations with you",
+  "can change my whole day.",
+  "",
+  "That is why when you ignore me or become distant,",
+  "even slightly, it hurts deeply.",
+  "It's not ego or anger —",
+  "it's just the pain of feeling far from someone",
+  "who is so important to me.",
+  "",
+  "When you go silent, my heart feels heavy.",
+  "I start wondering if I did something wrong,",
+  "or if I'm no longer important to you.",
+  "And that feeling is very difficult for me to handle.",
+  "",
+  "I don't expect big things from you.",
+  "I don't expect constant attention.",
+  "I just want to feel that I still matter to you.",
+  "That I am not someone you will forget with time.",
+  "",
+  "No matter how busy life becomes,",
+  "I hope you will always remember",
+  "that there is someone here",
+  "who truly respects you, looks up to you,",
+  "and cares about you deeply.",
+  "",
+  "If I ever make mistakes, please correct me.",
+  "If I say something wrong, please guide me.",
+  "I am ready to improve. I am ready to learn.",
+  "But please don't ignore me.",
+  "Your silence hurts much more",
+  "than any scolding ever could.",
+  "",
+  "I promise I will always respect you,",
+  "always be grateful for you,",
+  "and always try to become someone",
+  "you can be proud of.",
+  "",
+  "The place you hold in my life is permanent.",
+  "It will never change.",
+  "",
+  "Please never forget me.",
+  "Please never push me away.",
+  "Keep me somewhere in your heart,",
+  "just like I keep you in mine every day.",
+  "",
+  "With deep love, respect, and sincerity,",
+  "Always your little one 💛"
+];
+
+let typeTimer=null,typeActive=false;
+
+function showMessageScreen(){
+  document.getElementById('msg-screen').classList.add('active');
+  startTyping();
+}
+
+function startTyping(){
+  typeActive=true;
+  const body=document.getElementById('msg-body');
+  body.innerHTML='<span id="msg-cursor"></span>';
+  let lineIdx=0,charIdx=0;
+  function typeChar(){
+    if(!typeActive)return;
+    const cursor=document.getElementById('msg-cursor');
+    if(!cursor)return;
+    if(lineIdx>=MESSAGE_LINES.length){
+      cursor.style.display='none';
+      setTimeout(()=>{
+        document.getElementById('msg-footer').classList.add('show');
+        document.getElementById('msg-close-btn').classList.add('show');
+        // Cascade quotes one by one
+        const qs=document.getElementById('msg-quotes-section');
+        if(qs){
+          setTimeout(()=>{
+            qs.classList.add('show');
+            [0,1,2,3,4,5,6,7,8,9].forEach((qi)=>{
+              setTimeout(()=>{
+                const qel=document.getElementById('q'+qi);
+                if(qel) qel.classList.add('show');
+              }, qi*900);
+            });
+          }, 600);
+        }
+
+      },500);
+      return;
+    }
+    const line=MESSAGE_LINES[lineIdx];
+    if(line===''){cursor.insertAdjacentHTML('beforebegin','<br>');lineIdx++;charIdx=0;typeTimer=setTimeout(typeChar,280);return;}
+    if(charIdx<line.length){
+      const ch=line[charIdx];cursor.insertAdjacentText('beforebegin',ch);charIdx++;
+      const delay=['.','!','?'].includes(ch)?200:ch===','?120:40;
+      typeTimer=setTimeout(typeChar,delay);
+    }else{cursor.insertAdjacentHTML('beforebegin','<br>');lineIdx++;charIdx=0;typeTimer=setTimeout(typeChar,260);}
+  }
+  typeChar();
+}
+
+function closeMsgScreen(){
+  typeActive=false;clearTimeout(typeTimer);
+  document.getElementById('msg-screen').classList.remove('active');
+  setTimeout(()=>{
+    document.getElementById('msg-body').innerHTML='<span id="msg-cursor"></span>';
+    const qs=document.getElementById('msg-quotes-section');
+    if(qs){ qs.classList.remove('show'); for(let qi=0;qi<10;qi++){ const qel=document.getElementById('q'+qi); if(qel) qel.classList.remove('show'); } }
+    document.getElementById('msg-footer').classList.remove('show');
+    document.getElementById('msg-close-btn').classList.remove('show');
+
+  },1000);
+  heartBroken=false;heartBuilt=false;shatterPieces=[];heartParts=[];
+  spawnHeartParticles();
+  setTimeout(()=>{
+    heartBuilt=true;
+    const btn=document.getElementById('reveal-btn');
+    btn.style.pointerEvents='';
+    btn.classList.add('visible');
+  },3200);
+}
+
+// Attach reveal button
+document.getElementById('reveal-btn').addEventListener('click',triggerHeartShatter);
+
+// ══════════════════════════════════════════════════
+// UNIFIED LOOPS
+// ══════════════════════════════════════════════════
+let extraLast=0;
+(function extraLoop(ts){
+  const dt=Math.min((ts-extraLast)/1000,0.05);extraLast=ts;
+  updateTrail(dt);updateButterflies(dt);updateConfetti(dt);
+  drawShatter(dt);checkConfetti();
+  requestAnimationFrame(extraLoop);
+})(0);
+</script>
 </body>
+</html>
