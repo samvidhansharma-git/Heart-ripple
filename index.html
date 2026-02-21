@@ -428,9 +428,9 @@ function frame(ts) {
   time += dt;
 
   // Phase transitions (sped up)
-  if (phase===0 && time > 1.5) phase = 1;
-  if (phase===1 && time > 3.5) phase = 2;
-  if (phase===2 && time > 5) {
+  if (phase===0 && time > 1.0) phase = 1;
+  if (phase===1 && time > 2.5) phase = 2;
+  if (phase===2 && time > 3.8) {
     phase = 3;
     triggerBurst();
     setTimeout(() => { phase = 4; spawnHeartParticles(); }, 600);
@@ -770,12 +770,30 @@ function showNextQuote() {
   }, 1800);
 }
 
-// Start quotes after heart is built (~8s into animation)
-setTimeout(() => {
-  quoteEl.textContent = loveQuotes[0];
-  quoteEl.classList.add('visible');
-  setInterval(showNextQuote, 5500);
-}, 8000);
+// Show each quote once for 5s, no loop, then hide forever
+let quotesDone = false;
+function runQuotesOnce() {
+  if (quotesDone) return;
+  quotesDone = true;
+  let qi = 0;
+  function showOne() {
+    if (qi >= loveQuotes.length) {
+      // All done — fade out and remove
+      quoteEl.classList.remove('visible');
+      return;
+    }
+    quoteEl.classList.remove('visible');
+    setTimeout(() => {
+      quoteEl.textContent = loveQuotes[qi];
+      quoteEl.classList.add('visible');
+      qi++;
+      setTimeout(showOne, 5000); // 5s per quote then next
+    }, 1200); // fade transition gap
+  }
+  showOne();
+}
+// Start quotes after heart built (~6s into animation with speedup)
+setTimeout(runQuotesOnce, 6000);
 
 // ── Sparkle Cursor Trail ─────────────────────────────
 const trailCanvas = document.getElementById('cursor-trail-canvas');
@@ -1202,11 +1220,16 @@ requestAnimationFrame(petalLoop);
 
 // ── Click-the-Heart Hidden Message ──────────────────
 let heartClickable = false;
-setTimeout(() => {
+// Show click hint as soon as heart is built
+function enableHeartClick() {
   heartClickable = true;
   const hint = document.getElementById('click-hint');
   if (hint) { hint.classList.add('visible'); }
-}, 9000);
+}
+// Poll until heartBuilt
+const _hintCheck = setInterval(() => {
+  if (heartBuilt) { clearInterval(_hintCheck); enableHeartClick(); }
+}, 300);
 
 canvas.addEventListener('click', (e) => {
   if (!heartClickable) return;
