@@ -113,77 +113,6 @@
     z-index: 20;
   }
 
-  #heart-msg-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0);
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    transition: background 0.8s ease;
-  }
-  #heart-msg-overlay.open {
-    background: rgba(0,0,5,0.75);
-    pointer-events: all;
-  }
-  #heart-msg-box {
-    background: linear-gradient(135deg, rgba(80,0,40,0.92), rgba(20,0,60,0.95));
-    border: 1px solid rgba(255,150,200,0.35);
-    border-radius: 24px;
-    padding: clamp(28px,5vw,56px) clamp(32px,6vw,72px);
-    max-width: 580px;
-    width: 88%;
-    text-align: center;
-    box-shadow: 0 0 60px rgba(255,100,180,0.25), 0 0 120px rgba(255,80,160,0.1);
-    backdrop-filter: blur(20px);
-    transform: scale(0.6) translateY(40px);
-    opacity: 0;
-    transition: transform 0.7s cubic-bezier(0.34,1.56,0.64,1), opacity 0.5s ease;
-    pointer-events: none;
-  }
-  #heart-msg-overlay.open #heart-msg-box {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-    pointer-events: all;
-  }
-  #heart-msg-box h2 {
-    font-family: 'Georgia', serif;
-    font-size: clamp(22px, 4vw, 36px);
-    color: #ffd6e8;
-    margin-bottom: 18px;
-    text-shadow: 0 0 20px rgba(255,150,200,0.8);
-    letter-spacing: 0.05em;
-  }
-  #heart-msg-box p {
-    font-family: 'Georgia', serif;
-    font-size: clamp(13px, 1.8vw, 17px);
-    color: rgba(255,220,235,0.88);
-    line-height: 1.9;
-    font-style: italic;
-    margin-bottom: 12px;
-  }
-  #heart-msg-box .emoji-row {
-    font-size: clamp(22px,4vw,32px);
-    margin: 18px 0;
-    letter-spacing: 6px;
-  }
-  #heart-msg-close {
-    margin-top: 24px;
-    background: linear-gradient(135deg, #ff6eb0, #ffb347);
-    border: none;
-    border-radius: 50px;
-    color: #fff;
-    font-size: 14px;
-    letter-spacing: 0.2em;
-    padding: 11px 30px;
-    cursor: pointer;
-    font-family: Georgia, serif;
-    box-shadow: 0 0 20px rgba(255,110,176,0.5);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  #heart-msg-close:hover { transform: scale(1.07); box-shadow: 0 0 30px rgba(255,110,176,0.8); }
 
 
   #reveal-btn {
@@ -227,6 +156,104 @@
     0%, 100% { box-shadow: 0 0 25px rgba(255,100,180,0.3), 0 0 50px rgba(255,80,160,0.1); }
     50%       { box-shadow: 0 0 45px rgba(255,100,180,0.6), 0 0 90px rgba(255,80,160,0.25); }
   }
+
+  #msg-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, #0a0010 0%, #000005 100%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.2s ease;
+    padding: 40px 20px;
+  }
+  #msg-screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  #msg-header {
+    font-family: 'Georgia', serif;
+    font-size: clamp(18px, 3.5vw, 32px);
+    color: rgba(255,180,210,0.95);
+    letter-spacing: 0.1em;
+    margin-bottom: 32px;
+    text-align: center;
+    text-shadow: 0 0 30px rgba(255,100,180,0.7), 0 0 60px rgba(255,80,160,0.3);
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 1s ease 0.5s, transform 1s ease 0.5s;
+  }
+  #msg-screen.active #msg-header {
+    opacity: 1; transform: translateY(0);
+  }
+  #msg-body {
+    max-width: 680px;
+    width: 92%;
+    font-family: 'Georgia', serif;
+    font-size: clamp(14px, 2.1vw, 19px);
+    color: rgba(255,220,235,0.88);
+    line-height: 2.0;
+    font-style: italic;
+    text-align: center;
+    text-shadow: 0 0 12px rgba(255,150,200,0.3);
+    min-height: 220px;
+  }
+  #msg-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: rgba(255,180,210,0.9);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 0.75s step-end infinite;
+    box-shadow: 0 0 8px rgba(255,150,200,0.8);
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  #msg-footer {
+    margin-top: 36px;
+    font-family: 'Georgia', serif;
+    font-size: clamp(13px, 1.8vw, 16px);
+    color: rgba(255,215,0,0.85);
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 20px rgba(255,200,0,0.5);
+    opacity: 0;
+    transition: opacity 2s ease;
+    text-align: center;
+  }
+  #msg-footer.show { opacity: 1; }
+  #msg-close-btn {
+    margin-top: 30px;
+    background: linear-gradient(135deg, rgba(180,0,80,0.3), rgba(80,0,120,0.35));
+    border: 1.5px solid rgba(255,150,200,0.4);
+    border-radius: 50px;
+    color: rgba(255,220,240,0.85);
+    font-family: 'Georgia', serif;
+    font-size: clamp(12px,1.5vw,15px);
+    letter-spacing: 0.2em;
+    padding: 11px 32px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 2s ease, background 0.3s, transform 0.3s;
+    box-shadow: 0 0 20px rgba(255,100,180,0.2);
+  }
+  #msg-close-btn.show { opacity: 1; }
+  #msg-close-btn:hover {
+    background: linear-gradient(135deg,rgba(220,0,100,0.5),rgba(120,0,180,0.45));
+    transform: scale(1.05);
+    box-shadow: 0 0 35px rgba(255,100,180,0.5);
+  }
+  /* Shatter particle canvas */
+  #shatter-canvas {
+    position: fixed;
+    top:0;left:0;width:100%;height:100%;
+    pointer-events:none;
+    z-index:99;
+  }
 </style>
 </head>
 <body>
@@ -234,11 +261,14 @@
 <canvas id="petals-canvas"></canvas>
 <button id="sound-btn">♪ Sound ON</button>
 <canvas id="cursor-trail-canvas"></canvas>
+<canvas id="shatter-canvas"></canvas>
+<div id="msg-screen">
+  <div id="msg-header">💌 &nbsp; For My Dearest Akka &nbsp; 💌</div>
+  <div id="msg-body"><span id="msg-text"></span><span id="msg-cursor"></span></div>
+  <div id="msg-footer">— Forever your little one &nbsp;🌸&nbsp; I love you, Akka 💛</div>
+  <button id="msg-close-btn" onclick="closeMsgScreen()">↩ Back to the Heart</button>
+</div>
 <button id="reveal-btn">✦ Open My Heart ✦</button>
-<div id="heart-msg-overlay" id="heart-msg-overlay">
-  <div id="heart-msg-box">
-    <h2>💌 To My Dearest Akka</h2>
-    <div class="emoji-row">🌸 💖 🌟 💫 🌺</div>
     <p>Long before I understood this world, you were already my world. You held my hand when I was too small to walk alone, and you never let go — not once, not ever.</p>
     <p>You are the reason I laugh a little louder, dream a little bigger, and love a little deeper. Every good thing in me carries a piece of you.</p>
     <p>You never needed to say "I love you" for me to feel it. I felt it in every sacrifice you made quietly, every time you put me first without thinking twice, every time you stayed up just so I wouldn't feel alone.</p>
